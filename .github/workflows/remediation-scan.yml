@@ -1,0 +1,174 @@
+name: Dependabot Remediation Audit
+
+# Trigger: Daily schedule and manual dispatch
+on:
+  schedule:
+    # Run daily at 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      config_url:
+        description: 'URL to custom repos.json config (optional)'
+        required: false
+        type: string
+
+# Environment variables (customize for your setup)
+env:
+  # Default audit output directory within the workflow
+  AUDIT_OUTPUT_DIR: 'audit_results'
+  # GitHub token (auto-provided by GitHub Actions)
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  dependabot-audit:
+    name: Run Dependabot Audit
+    runs-on: ubuntu-latest
+    
+    permissions:
+      # Required to read Dependabot alerts via GitHub API
+      contents: read
+      # Required to fetch repository metadata
+      metadata: read
+      # Required if publishing results as artifacts or creating issues
+      issues: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Shallow clone for efficiency
+          fetch-depth: 1
+
+      - name: Download audit script
+        run: |
+          # Option 1: Use script from repository root
+          # (Assumes run_audit.sh is committed to .github/scripts/run_audit.sh)
+          
+          # Option 2: Download from external source
+          # Uncomment below and update URL to your script location:
+          # curl -sSL https://your-org/monitoring/scripts/run_audit.sh -o run_audit.sh
+          
+          # For now, assume script is in repo
+          if [ ! -f ".github/scripts/run_audit.sh" ]; then
+            echo "ERROR: run_audit.sh not found. Install using install_workflow.sh first."
+            exit 1
+          fi
+          
+          chmod +x .github/scripts/run_audit.sh
+
+      - name: Download configuration
+        run: |
+          # Load repos.json for audited repositories
+          # Option 1: Use repos.json from repository
+          if [ ! -f "repos.json" ]; then
+            # Option 2: Create default config with your repositories
+            # Customize the repositories list below:
+            cat > repos.json << 'EOF'
+          {
+            "repositories": [
+              { "owner": "YOUR_ORG", "name": "REPO_1", "enabled": true },
+              { "owner": "YOUR_ORG", "name": "REPO_2", "enabled": true }
+            ]
+          }
+          EOF
+            echo "Using default repos.json (customize for your needs)"
+          else
+            echo "Using repos.json from repository"
+          fi
+          
+          # Optional: Download custom config if provided
+          if [ -n "${{ github.event.inputs.config_url }}" ]; then
+            curl -sSL "${{ github.event.inputs.config_url }}" -o repos.json
+            echo "Downloaded custom config from provided URL"
+          fi
+
+      - name: Authenticate with GitHub CLI
+        run: |
+          # GitHub CLI is pre-installed in ubuntu-latest
+          gh auth status
+          echo "✓ GitHub CLI authenticated"
+
+      - name: Run Dependabot audit
+        run: |
+          mkdir -p "${{ env.AUDIT_OUTPUT_DIR }}"
+          .github/scripts/run_audit.sh repos.json "${{ env.AUDIT_OUTPUT_DIR }}"
+
+      - name: Upload audit results
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependabot-audit-results
+          path: ${{ env.AUDIT_OUTPUT_DIR }}/
+          retention-days: 30
+
+      - name: Publish audit summary as workflow annotation
+        if: success()
+        run: |
+          # Extract summary and add as GitHub workflow annotation
+          SUMMARY_FILE=$(ls -t "${{ env.AUDIT_OUTPUT_DIR }}/audit_summary_"*.txt | head -1)
+          
+          if [ -f "$SUMMARY_FILE" ]; then
+            echo "## Dependabot Audit Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Create issue if critical vulnerabilities found
+        if: success()
+        run: |
+          # Parse audit results and create issue if critical alerts exist
+          ALERTS_FILE=$(ls -t "${{ env.AUDIT_OUTPUT_DIR }}/dependabot_alerts_"*.json | head -1)
+          
+          if [ -f "$ALERTS_FILE" ]; then
+            CRITICAL_COUNT=$(jq '[.[] | select(.severity == "critical")] | length' "$ALERTS_FILE")
+            
+            if [ "$CRITICAL_COUNT" -gt 0 ]; then
+              gh issue create \
+                --title "⚠️ Critical Dependabot Alerts Found ($CRITICAL_COUNT)" \
+                --body "Audit run detected $CRITICAL_COUNT critical severity vulnerabilities.
+
+See audit results in the workflow artifacts for full details.
+
+**Action Required:** Review and remediate these vulnerabilities immediately." \
+                --label "security,dependabot" \
+                || echo "Issue creation skipped (repository is not writable or issue already exists)"
+            fi
+          fi
+
+      - name: Post results to Slack (optional)
+        if: success()
+        run: |
+          # Optional: Send audit summary to Slack webhook
+          # Uncomment and configure SLACK_WEBHOOK_URL secret in your repository
+          
+          # if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+          #   SUMMARY_FILE=$(ls -t "${{ env.AUDIT_OUTPUT_DIR }}/audit_summary_"*.txt | head -1)
+          #   
+          #   SUMMARY=$(cat "$SUMMARY_FILE" | head -20)
+          #   
+          #   curl -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+          #     -H 'Content-Type: application/json' \
+          #     -d @- << 'PAYLOAD'
+          # {
+          #   "text": "Daily Dependabot Audit Complete",
+          #   "blocks": [
+          #     {
+          #       "type": "section",
+          #       "text": {
+          #         "type": "mrkdwn",
+          #         "text": "```\n$SUMMARY\n```"
+          #       }
+          #     }
+          #   ]
+          # }
+          # PAYLOAD
+          # fi
+          
+          echo "Slack integration not configured. See comments in workflow to enable."
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          echo "❌ Audit failed. Review logs for details."
+          exit 1
