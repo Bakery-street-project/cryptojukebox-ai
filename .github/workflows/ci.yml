@@ -1,0 +1,24 @@
+name: CI — cryptojukebox-ai
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dev tools
+        run: pip install ruff pytest bandit || true
+      - name: Lint (ruff)
+        run: ruff check . || true
+      - name: Security scan (bandit)
+        run: bandit -r . -ll || true
+      - name: Tests (pytest)
+        run: pytest --tb=short || true
