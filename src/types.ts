@@ -34,6 +34,18 @@ export interface SpikeState {
   raster: string;
 }
 
+export interface DreamMeta {
+  /** Hex entropy of this dream. Paste it back as dreamSeed to replay the identical dream. */
+  dreamSeed: string;
+  /** 0–1 standing in for reduced executive function (M3). */
+  execIndex: number;
+  /** 0–1 confidence of the reconstructive recall that produced these texts (M7). */
+  recallConfidence: number;
+  nodeCount: number;
+  burstCount: number;
+  residueCount: number;
+}
+
 export interface Artifacts {
   dream: string;
   idea: string;
@@ -41,6 +53,7 @@ export interface Artifacts {
   sigil: string;
   prompt: string;
   engine: "local" | "llm";
+  dreamMeta: DreamMeta;
 }
 
 export interface DecodeResponse {

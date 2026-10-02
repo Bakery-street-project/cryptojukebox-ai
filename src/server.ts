@@ -1,6 +1,7 @@
 import { analyze } from "./features.ts";
 import { classifyUrl, IngestError, ingestSpotify, ingestUpload, ingestYoutube } from "./ingest.ts";
 import { generate } from "./generate.ts";
+import { isDreamSeed } from "./dream/seed.ts";
 import { runLif } from "./snn.ts";
 import { readPaymentsConfig } from "./payments/config.ts";
 import { buildPaymentGate } from "./payments/server.ts";
@@ -34,25 +35,33 @@ const MIME: Record<string, string> = {
 async function handleDecode(req: Request): Promise<Response> {
   const ct = req.headers.get("content-type") ?? "";
   let source;
+  let rawSeed: unknown;
   if (ct.includes("multipart/form-data")) {
     const fd = await req.formData();
     const file = fd.get("file");
     if (!(file instanceof File)) throw new IngestError("no audio file in request");
     if (file.size > 80 * 1024 * 1024) throw new IngestError("file exceeds 80MB limit");
     source = await ingestUpload(file.name, new Uint8Array(await file.arrayBuffer()));
+    rawSeed = fd.get("dreamSeed");
   } else {
-    const body = (await req.json().catch(() => null)) as { url?: unknown } | null;
+    const body = (await req.json().catch(() => null)) as { url?: unknown; dreamSeed?: unknown } | null;
     const url = typeof body?.url === "string" ? body.url.trim() : "";
     if (!/^https?:\/\//.test(url)) throw new IngestError("provide a valid http(s) URL");
     const kind = classifyUrl(url);
     if (kind === "youtube") source = await ingestYoutube(url);
     else if (kind === "spotify") source = await ingestSpotify(url);
     else throw new IngestError("supported sources: YouTube, Spotify (preview with API credentials), or uploaded audio files");
+    rawSeed = body?.dreamSeed;
+  }
+  let dreamSeed: string | undefined;
+  if (rawSeed !== undefined && rawSeed !== null) {
+    if (!isDreamSeed(rawSeed)) throw new IngestError("dreamSeed must be 8-32 hex characters");
+    dreamSeed = rawSeed;
   }
 
   const profile = analyze(source.samples, source.sampleRate, source.title);
   const spike = runLif(profile);
-  const artifacts = await generate(profile, spike);
+  const artifacts = await generate(profile, spike, dreamSeed === undefined ? undefined : { dreamSeed });
 
   const response: DecodeResponse = {
     id: source.id,
