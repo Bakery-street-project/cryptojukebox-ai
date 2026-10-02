@@ -106,6 +106,8 @@ scripts/    pay-demo.ts — x402 testnet client that pays for one decode
 tests/      bun test suites
 docs/       SETUP.md manual, CLOUDFLARE.md edge-integration plan,
             DREAM-LISTENING.md quality-gate notes
+cloudflare/ edge Worker prep (x402 gate, D1 dream permalinks, R2 audio) —
+            typechecked in CI, deliberately not deployed yet
 .github/    CI, dependabot, audit workflows
 ```
 
