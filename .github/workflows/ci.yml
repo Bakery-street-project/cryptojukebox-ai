@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches: [main, master]
-  pull_request:
-    branches: [main, master]
+  # no pull_request trigger: CI runs on the repo's self-hosted runner
+  # (jukebox-arch); fork PRs would execute attacker-chosen code there.
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, jukebox-ci]
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
