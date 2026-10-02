@@ -1,0 +1,6 @@
+{
+  "repositories": [
+    { "owner": "Bakery-street-project", "name": "cryptojukebox-ai", "enabled": true },
+    { "owner": "Bakery-street-project", "name": "*", "enabled": true }
+  ]
+}

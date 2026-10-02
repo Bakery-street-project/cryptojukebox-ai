@@ -29,6 +29,8 @@ jobs:
       contents: read
       # Required to fetch repository metadata
       metadata: read
+      # Required for GET /repos/{owner}/{repo}/dependabot/alerts
+      security_events: read
       # Required if publishing results as artifacts or creating issues
       issues: write
       pull-requests: read
@@ -58,28 +60,26 @@ jobs:
           chmod +x .github/scripts/run_audit.sh
 
       - name: Download configuration
+        env:
+          CONFIG_URL: ${{ github.event.inputs.config_url }}
         run: |
           # Load repos.json for audited repositories
           # Option 1: Use repos.json from repository
           if [ ! -f "repos.json" ]; then
-            # Option 2: Create default config with your repositories
-            # Customize the repositories list below:
-            cat > repos.json << 'EOF'
-          {
-            "repositories": [
-              { "owner": "YOUR_ORG", "name": "REPO_1", "enabled": true },
-              { "owner": "YOUR_ORG", "name": "REPO_2", "enabled": true }
-            ]
-          }
-          EOF
-            echo "Using default repos.json (customize for your needs)"
+            echo "ERROR: repos.json must be committed to the repository."
+            exit 1
           else
             echo "Using repos.json from repository"
           fi
-          
+
           # Optional: Download custom config if provided
-          if [ -n "${{ github.event.inputs.config_url }}" ]; then
-            curl -sSL "${{ github.event.inputs.config_url }}" -o repos.json
+          if [ -n "${CONFIG_URL:-}" ]; then
+            case "$CONFIG_URL" in
+              https://*) ;;
+              *) echo "ERROR: config_url must be an https:// URL"; exit 1 ;;
+            esac
+            curl -sSL "$CONFIG_URL" -o repos.json
+            jq -e '.repositories' repos.json > /dev/null || { echo "ERROR: fetched repos.json is invalid"; exit 1; }
             echo "Downloaded custom config from provided URL"
           fi
 
