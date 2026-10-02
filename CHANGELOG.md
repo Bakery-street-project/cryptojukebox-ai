@@ -11,6 +11,34 @@ versions: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `CHANGELOG.md`, root `AGENTS.md`.
 - `engines.bun` pin in `package.json` (informational — Bun does not
   enforce it).
+- Journal paging: `GET /api/dreams?offset=` and a **Load more** button,
+  so the journal is no longer capped at twelve entries (`58f4b6d`).
+- `GET /api/dreams/export` — whole journal as NDJSON attachment, plus an
+  Export link in the UI: the first backup path for dream data.
+- Journal empty and fetch-failure states with distinct copy and a retry
+  button (previously both silently hid the section).
+- Tablist Home/End keys, live `prefers-reduced-motion` tracking,
+  debounced resize redraw, programmatic focus on first results show.
+- `scripts/ui-validate.ts` — 23-check Playwright runtime validation,
+  re-runnable release evidence (`55e906e`).
+
+### Fixed
+- Cold-load panel leak: `.tabpanel`/`.results` display rules overrode the
+  UA `[hidden]` rule, so the Upload panel and empty results cards
+  rendered before any decode; global `[hidden]{display:none!important}`
+  (`4406ce8`).
+- Journal-click/decode render race: an in-flight decode clobbered a
+  clicked dream and stale status timers kept mutating `aria-busy` text;
+  a `renderEpoch` guard gives the screen to whoever asked last
+  (`4406ce8`).
+- `render()` no longer throws on thin payloads — missing fields render
+  `—`, a malformed 200 surfaces as a toast, and unreachable-server
+  errors get an explicit retry message instead of "Failed to fetch".
+- Neural sigil legibility: cells sized from the measured container with
+  no 360 px cap; dense rasters scroll horizontally instead of shrinking
+  to specks (`49ed11b`).
+- `--color-secondary` `#6366f1` → `#818cf8` (3.5:1 → 5.3:1 on glass —
+  AA for the 13 px uppercase headings); dead `.pulse` element removed.
 
 ## [0.1.0] — 2026-10-02
 

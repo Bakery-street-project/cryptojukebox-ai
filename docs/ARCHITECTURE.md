@@ -30,7 +30,7 @@ flowchart LR
   DE --> GEN["generate.ts<br/>local artifacts · optional LLM re-teller"]
   GEN --> API["/api/decode → DecodeResponse"]
   API --> JR["journal.ts: bun:sqlite<br/>first seed wins"]
-  JR --> PERM["/dream/:seed · /api/dreams · /?seed="]
+  JR --> PERM["/dream/:seed · /api/dreams(+offset) · /api/dreams/export · /?seed="]
 ```
 
 ## 2. Module map (origin)
@@ -75,9 +75,10 @@ cross-artifact containment, 30-seed sweep.
 |---|---|---|---|
 | `/api/decode` | POST | multipart upload or `{"url"}` (+optional `dreamSeed`); gate-checked when `JUKEBOX_PAYMENTS≠off`; IngestError→400, else 500; journal write is best-effort — a broken store is a logged miss, never a failed decode | `server.ts:36-84,99-117` |
 | `/dream/:seed` | GET | journal replay of the stored payload, `cache-control: public, max-age=31536000, immutable`; 404 names the seed (input already hex-validated) | `server.ts:118-125` |
-| `/api/dreams` | GET | newest-first index, `limit` default 50 clamped 1..500 | `server.ts:126-129`, `journal.ts listDreams` |
-| `/audio/:id` | GET | cached file from `CACHE_DIR`, `accept-ranges: bytes` | `server.ts:130-141` |
-| `/`, static | GET | `public/` with path sanitization | `server.ts:142-151` |
+| `/api/dreams` | GET | newest-first index, `limit` default 50 clamped 1..500, `offset` clamped ≥0 | `server.ts:135-140`, `journal.ts:73-80` |
+| `/api/dreams/export` | GET | whole journal as NDJSON (one stored response per line), attachment disposition, unpaged by design | `server.ts:126-133`, `journal.ts:87-93` |
+| `/audio/:id` | GET | cached file from `CACHE_DIR`, `accept-ranges: bytes` | `server.ts:142-153` |
+| `/`, static | GET | `public/` with path sanitization | `server.ts:154-163` |
 
 Fresh-by-default: the server always supplies `freshDreamSeed()` unless the
 client passes one (`server.ts:66`); the signature-derived fallback seed

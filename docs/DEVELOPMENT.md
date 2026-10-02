@@ -20,7 +20,7 @@ system design in `docs/ARCHITECTURE.md`.
 |---|---|---|
 | 1 | `bun install --frozen-lockfile` | root |
 | 2 | `bunx tsc --noEmit` | root — strict; `include: ["src","tests"]` |
-| 3 | `bun test` | 83 tests / 11 files, ~1 s |
+| 3 | `bun test` | 86 tests / 11 files, ~1 s |
 | 4 | `cd cloudflare && bun install --frozen-lockfile && bunx tsc --noEmit` | Worker |
 | 5 | `codeql` job (parallel) | SARIF → code scanning |
 
@@ -58,6 +58,19 @@ working tree or `.data/`.
   validation (`tests/dream-bank.test.ts`), anti-word-salad floors
   (`tests/dream-render.test.ts`). These are the guardrails ADR-001/002
   made testable — break them deliberately or not at all.
+
+## UI runtime validation
+
+- `scripts/ui-validate.ts` drives the **running app** in headless
+  Chromium (Playwright) — 23 checks covering the two historical UI
+  blockers (cold-load `[hidden]` leak, journal/decode render race) with
+  before/after proof, decode E2E, journal paging/export, tab keyboard
+  semantics and deep links. Run it against any live instance:
+  `UI_URL=http://localhost:8787 TRACK=/path/to/short.wav bun scripts/ui-validate.ts`
+  (needs a `playwright`-resolvable `node_modules` in this machine's
+  resolution chain; screenshots land in `/tmp`). Unit tests prove the
+  engine; this proves the product surface — RELEASING's smoke step
+  points here.
 
 ## Runner operations (CI box = this machine)
 

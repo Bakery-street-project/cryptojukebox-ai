@@ -17,7 +17,7 @@ byte-identically.
 bun install
 bun dev              # src/server.ts on :8787 — NO hot reload, restart after src/ edits
 bun run typecheck    # tsc --noEmit (include: src, tests — scripts/ is NOT covered)
-bun test             # 83 tests / 11 files
+bun test             # 86 tests / 11 files
 cd cloudflare && bun install && bunx tsc --noEmit   # edge Worker (separate package)
 bun scripts/pr-check.ts <N>   # review a fork PR locally (see CONTRIBUTING)
 ```

@@ -92,7 +92,10 @@ Full request/response contracts (both runtimes): [docs/API.md](docs/API.md).
   recorded locally (`.data/dreams.db`, SQLite, path via `JUKEBOX_DATA_DIR`),
   first seed wins, and the stored payload is served back byte-identical with
   an immutable cache header. The UI links each dream at `/?seed=…`.
-- `GET /api/dreams?limit=` — newest-first journal index (seed, title, time).
+- `GET /api/dreams?limit=&offset=` — newest-first journal index (seed,
+  title, time), paged.
+- `GET /api/dreams/export` — the whole journal as an NDJSON attachment
+  (one stored dream per line): the backup path.
 - `GET /audio/:id` — streams previously decoded cached audio.
 
 When the payment gate is enabled (`JUKEBOX_PAYMENTS=mock|x402-testnet`) an
@@ -115,6 +118,7 @@ src/dream/  the mechanism engine (bank bursts replay walk executive arc
 src/payments/  x402 fee gate (config / mock / server)
 public/     index.html style.css app.js   (glassmorphic neon UI)
 scripts/    pay-demo.ts — x402 testnet client that pays for one decode
+            ui-validate.ts — Playwright runtime checks (release evidence)
 tests/      bun test suites
 docs/       SETUP.md manual, ARCHITECTURE.md system shape (source-cited),
             API.md route contracts, DEVELOPMENT.md build/check matrix,

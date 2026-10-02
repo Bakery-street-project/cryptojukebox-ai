@@ -70,14 +70,27 @@ journal failure never turns a paid 200 into a 500, `server.ts:76-82`).
 | 404 | `{"error": "no dream recorded for seed <seed>"}` |
 | 404 (plain) | seed-shaped but unroutable paths fall to static handling — malformed seeds never reach the store (`tests/journal-routes.test.ts`) |
 
-### `GET /api/dreams?limit=`
+### `GET /api/dreams?limit=&offset=`
 
 `DreamSummary[]` — `{"seed","title","created_at" /* epoch ms */}`,
-newest-first; `limit` default 50, clamped to 1..500 (`journal.ts:74`).
+newest-first; `limit` default 50, clamped to 1..500; `offset` default 0,
+clamped to ≥0 (junk and negatives fall back to the first page, never a
+400 — the list shape is a plain array, so paging is additive and old
+clients are unaffected) (`server.ts:135-140`, `journal.ts:73-80`).
+
+### `GET /api/dreams/export`
+
+The whole journal as **NDJSON** — one stored `DecodeResponse` per line,
+newest-first (`server.ts:126-133`, `journal.ts:87-93`).
+`application/x-ndjson`, `content-disposition: attachment;
+filename="dreams-<epoch-seconds>.ndjson"`. Deliberately unpaged: a
+backup that silently drops rows is worse than none. Empty journal →
+200 with an empty body (still valid NDJSON). No auth — the journal is
+local data the caller already owns.
 
 ### `GET /audio/:id`
 
-`:id` = `[a-z0-9-]{1,64}` case-insensitive (`server.ts:130`). Streams the
+`:id` = `[a-z0-9-]{1,64}` case-insensitive (`server.ts:142`). Streams the
 cached source file with `accept-ranges: bytes` and a MIME map
 (html/js/css/mp3/ogg/m4a/webm/wav/flac). 404 plain text "not found".
 
@@ -85,7 +98,7 @@ cached source file with `accept-ranges: bytes` and a MIME map
 
 `/` and `/index.html` serve the UI; other paths resolve against
 `public/` after character whitelisting and `..` stripping
-(`server.ts:145-150`).
+(`server.ts:157-162`).
 
 ## Edge (Cloudflare Worker, `cloudflare/src/index.ts`) — prepared, not deployed
 

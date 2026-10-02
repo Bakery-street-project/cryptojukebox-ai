@@ -18,14 +18,16 @@ artifact-discipline, not server pushes — until the edge goes live.
 
 ## Release checklist
 
-1. `bun run typecheck && bun test` green locally (83 tests).
+1. `bun run typecheck && bun test` green locally (86 tests).
 2. `CHANGELOG.md`: move Unreleased → version section, date it.
 3. `package.json` version bump + annotated tag, one commit.
 4. Push `main` + tags; watch the CI run — both `quality` and `codeql`
    must pass on the runner (ADR-004/005):
    `gh run watch <id> --exit-status`.
 5. Smoke the surface: `bun dev`, decode `/tmp/testtrack.wav`-class file,
-   confirm `dreamSeed` recall via `GET /dream/:seed`.
+   confirm `dreamSeed` recall via `GET /dream/:seed` — or run the full
+   scripted pass, `scripts/ui-validate.ts` (`docs/DEVELOPMENT.md` §UI
+   runtime validation).
 
 ## What a release must not break (data compatibility)
 
