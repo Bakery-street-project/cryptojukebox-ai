@@ -108,6 +108,13 @@ way `src/payments/` dies.
 > **Stop conditions:** if any doubt remains that the edge is verified, stop
 > and leave `src/payments/` in place. Never ship a moment with zero gates on
 > a public origin: sequence is off-origin-last, edge-live-first.
+>
+> **Ending-phase closeout** (make the retirement *final*, per
+> `docs/RELEASING.md` "Deprecation & ending phases"): `CHANGELOG.md`
+> entry; update ADR-003's consequence note (origin gate → deleted,
+> edge-only); strip `JUKEBOX_PAYMENTS*` from `.env.example`; delete
+> `scripts/pay-demo.ts` or retarget it at the edge; re-point any
+> remaining README "Status & scope" lines at the edge gate.
 
 ## T3 — Real OPENAI-key run of the LLM re-teller (prerequisite: an API key)
 

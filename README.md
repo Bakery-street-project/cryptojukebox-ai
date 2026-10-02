@@ -81,6 +81,8 @@ bun run typecheck  # strict TypeScript check
 
 ## API
 
+Full request/response contracts (both runtimes): [docs/API.md](docs/API.md).
+
 - `POST /api/decode` — multipart file upload (≤80 MB) or JSON `{"url": "…"}`;
   returns track profile, neural state and all artifacts. Optional
   `dreamSeed` (field or JSON key, 8–32 hex): omit it and the decode draws
@@ -114,8 +116,11 @@ src/payments/  x402 fee gate (config / mock / server)
 public/     index.html style.css app.js   (glassmorphic neon UI)
 scripts/    pay-demo.ts — x402 testnet client that pays for one decode
 tests/      bun test suites
-docs/       SETUP.md manual, CLOUDFLARE.md edge-integration plan,
-            DREAM-LISTENING.md quality-gate notes
+docs/       SETUP.md manual, ARCHITECTURE.md system shape (source-cited),
+            API.md route contracts, DEVELOPMENT.md build/check matrix,
+            RELEASING.md release/rollback, adr/ decision records,
+            CLOUDFLARE.md edge-integration plan, DREAM-LISTENING.md
+            quality-gate notes, HANDOFF-PROMPTS.md blocked-task prompts
 cloudflare/ edge Worker prep (x402 gate, D1 dream permalinks, R2 audio) —
             typechecked in CI, deliberately not deployed yet
 .github/    CI, dependabot, audit workflows
