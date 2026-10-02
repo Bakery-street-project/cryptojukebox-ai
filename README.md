@@ -135,7 +135,8 @@ cloudflare/ edge Worker prep (x402 gate, D1 dream permalinks, R2 audio) —
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Fork PRs get no CI runner by
+design — review them locally with `bun scripts/pr-check.ts <N>`.
 
 ## License
 
