@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { dreamState, runDream, signatureSeed } from "../src/dream/engine.ts";
-import { DEFAULT_BANK } from "../src/dream/bank.ts";
+import { DEFAULT_BANK, type Fragment } from "../src/dream/bank.ts";
 import type { SpikeState, TrackProfile } from "../src/types.ts";
 
 const spike: SpikeState = {
@@ -36,6 +36,38 @@ function profile(over: Partial<TrackProfile>): TrackProfile {
 
 const SEEDS = ["00000001", "00000002", "00000003", "cafe0000", "dddd1111", "beef5555", "0123abcd", "7777aaaa"];
 
+/** 30 deterministic pseudo-random seeds — turns containment from seed-luck into a corpus invariant. */
+const SWEEP_SEEDS = Array.from({ length: 30 }, (_, i) =>
+  ((i + 1) * 2654435761)
+    .toString(16)
+    .padStart(8, "0")
+    .slice(-8),
+);
+
+function phraseOf(f: Fragment): string {
+  return f.words[0] ?? f.id;
+}
+
+/** Word-boundary phrase match — "hum" must not fire on "hums". */
+function mentionsPhrase(text: string, phrase: string): boolean {
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\b${escaped}\\b`).test(text);
+}
+
+/**
+ * Unvisited fragments whose own phrase is named in `text` — minus those whose
+ * phrase only appears nested inside a visited fragment's phrase (the container
+ * legitimately embeds it; the dream did not invent a new memory).
+ */
+function findIntruders(text: string, visitedFrags: readonly Fragment[]): string[] {
+  const visited = new Set(visitedFrags.map((f) => f.id));
+  return DEFAULT_BANK.fragments
+    .filter((f) => !visited.has(f.id))
+    .filter((f) => mentionsPhrase(text, phraseOf(f)))
+    .filter((f) => !visitedFrags.some((vf) => phraseOf(vf).includes(phraseOf(f))))
+    .map((f) => f.id);
+}
+
 describe("dream render (M7) floors", () => {
   test("anti-salad caps hold across seeds", () => {
     for (const seed of SEEDS) {
@@ -68,17 +100,28 @@ describe("dream render (M7) floors", () => {
 });
 
 describe("cross-artifact containment", () => {
-  test("idea, script and prompt only name fragments the dream actually walked", () => {
-    const walked = new Set<string>();
+  test("word-boundary match rejects substring false positives", () => {
+    expect(mentionsPhrase("the sergeant who hums a tune", "hum")).toBe(false);
+    expect(mentionsPhrase("you hum under your breath", "hum")).toBe(true);
+    expect(mentionsPhrase("visited the wet cavern once", "a wet cavern")).toBe(false);
+  });
+
+  test("nesting exemption spares a phrase only spoken inside its visited container", () => {
+    const container = DEFAULT_BANK.byId.get("wedding_in_undercroft")!;
+    expect(phraseOf(container)).toContain("the undercroft");
+    const text = `A wedding in the undercroft went on. ${container.words[0]}`;
+    const visited = [container];
+    const undercroft = DEFAULT_BANK.byId.get("undercroft")!;
+    expect(findIntruders(text, visited)).not.toContain(undercroft.id);
+    // without the container visited, naming it IS an intruder
+    expect(findIntruders(text, [])).toContain(undercroft.id);
+  });
+
+  test("dream text only names fragments the dream actually walked", () => {
     for (const seed of SEEDS) {
       const state = dreamState(profile({}), spike, Number.parseInt(seed, 16), DEFAULT_BANK);
       const arts = runDream(profile({}), spike, { dreamSeed: seed });
-      for (const n of state.nodes) walked.add(n.frag.id);
-      const visited = new Set(state.nodes.map((n) => n.frag.id));
-      const mentioned = DEFAULT_BANK.fragments.filter(
-        (f) => !visited.has(f.id) && arts.dream.includes(f.words[0] ?? f.id),
-      );
-      expect(mentioned.map((f) => f.id)).toEqual([]);
+      expect(findIntruders(arts.dream, state.nodes.map((n) => n.frag))).toEqual([]);
     }
   });
 
@@ -86,14 +129,18 @@ describe("cross-artifact containment", () => {
     for (const seed of SEEDS) {
       const state = dreamState(profile({}), spike, Number.parseInt(seed, 16), DEFAULT_BANK);
       const arts = runDream(profile({}), spike, { dreamSeed: seed });
-      const visited = new Set(state.nodes.map((n) => n.frag.id));
       const texts = `${arts.idea}\n${arts.script}\n${arts.prompt}`;
-      const intruders = DEFAULT_BANK.fragments.filter((f) => {
-        if (visited.has(f.id)) return false;
-        const w = f.words[0] ?? f.id;
-        return texts.includes(w);
-      });
-      expect(intruders.map((f) => f.id)).toEqual([]);
+      expect(findIntruders(texts, state.nodes.map((n) => n.frag))).toEqual([]);
+    }
+  });
+
+  test("30-seed sweep holds containment as a corpus invariant", () => {
+    for (const seed of SWEEP_SEEDS) {
+      const state = dreamState(profile({}), spike, Number.parseInt(seed, 16), DEFAULT_BANK);
+      const arts = runDream(profile({}), spike, { dreamSeed: seed });
+      const frags = state.nodes.map((n) => n.frag);
+      expect(findIntruders(arts.dream, frags)).toEqual([]);
+      expect(findIntruders(`${arts.idea}\n${arts.script}\n${arts.prompt}`, frags)).toEqual([]);
     }
   });
 });
