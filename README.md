@@ -21,28 +21,32 @@ The "bakery-street-project/cryptojukebox-ai" is an ambitious project aimed at de
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- npm or yarn
+- Bun 1.2+
+- ffmpeg + ffprobe (audio decode)
+- yt-dlp (YouTube ingest)
 
 ### Installation
 ```bash
-git clone https://github.com/bakery-street-project/cryptojukebox-ai.cd cryptojukebox-ai
+git clone https://github.com/Bakery-street-project/cryptojukebox-ai
 cd cryptojukebox-ai
-npm install
-# or: yarn install
+bun install
 ```
 
 ### Usage
 ```bash
-# Start development
-npm start
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
+bun dev            # jukebox UI on http://localhost:8787
+bun test           # feature-extraction, spiking-network and generator suites
+bun run typecheck  # strict TypeScript check
 ```
+
+Feed the jukebox a YouTube/Spotify link or an uploaded audio file. Pipeline:
+ffmpeg decode → FFT feature stream (RMS, spectral centroid, flux, ZCR, chroma,
+BPM, tonal key/mode) → 24-neuron leaky-integrate-and-fire spiking network with
+homeostatic threshold adaptation → deterministic dream/idea/script/prompt
+generator (optional LLM engine via env, see `.env.example`).
+
+The crypto-fee gate is deliberately not built yet — product first, payments
+last.
 
 ## Contributing
 
