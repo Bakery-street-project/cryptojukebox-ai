@@ -19,14 +19,18 @@ transaction; never run two payment gates at once.
 The account-level billing lock still kills every GitHub-*hosted* job
 (CI and CodeQL alike), so CI was moved off them: the repo now has a
 self-hosted runner **jukebox-arch** (label `jukebox-ci`, install at
-`~/actions-runner-jukebox/`, started with `nohup ./run.sh`), and
+`~/actions-runner-jukebox/`, now run as a **systemd user service**
+`actions-runner-jukebox.service` with `loginctl enable-linger kilisan`,
+so it survives logout and starts at boot — no sudo involved), and
 `.github/workflows/ci.yml` runs `quality` on `[self-hosted, jukebox-ci]`
 with the `pull_request` trigger deliberately removed so fork PRs can
 never execute code on the box. First run: success in 42 s (`f826df4`).
 
 Residual work if you want it:
-1. **Runner persistence** — it dies on reboot/logout. Make it a service:
-   `cd ~/actions-runner-jukebox && sudo ./svc.sh install && sudo ./svc.sh start`.
+1. ~~Runner persistence~~ — **done**: the runner unit restarts on failure
+   (`Restart=on-failure`, `RestartSec=5`) and starts at boot via linger.
+   If you ever prefer the root-managed variant instead:
+   `systemctl --user disable --now actions-runner-jukebox && cd ~/actions-runner-jukebox && sudo ./svc.sh install && sudo ./svc.sh start`.
 2. **Billing itself** is still locked (github.com/settings/billing as
    BoozeLee) — it also blocks Dependabot's updater and the CodeQL
    workflow, which still targets `ubuntu-latest` and will keep failing.
