@@ -146,6 +146,7 @@ form.addEventListener("submit", async (ev) => {
     if (!res.ok) throw new Error(data.error ?? `decode failed (HTTP ${res.status})`);
     stopStages();
     render(data);
+    loadJournal();
   } catch (e) {
     stopStages();
     const msg = e instanceof Error ? e.message : String(e);
@@ -199,9 +200,10 @@ function render(data) {
   $("a-script").textContent = data.artifacts.script;
   $("a-prompt").textContent = data.artifacts.prompt;
   const meta = data.artifacts.dreamMeta;
-  if (meta && meta.dreamSeed) {
+  if (meta && meta.dreamSeed && SEED_RE.test(meta.dreamSeed)) {
     $("a-seed").textContent = meta.dreamSeed;
     $("seed-wrap").hidden = false;
+    history.replaceState(null, "", `/?seed=${meta.dreamSeed}`);
   } else {
     $("seed-wrap").hidden = true;
   }
@@ -311,7 +313,9 @@ function drawSigil(raster) {
 /* ---------- copy buttons ---------- */
 document.querySelectorAll(".copy").forEach((btn) => {
   btn.addEventListener("click", async () => {
-    const text = $(btn.dataset.target).textContent;
+    const text = btn.id === "copy-link"
+      ? `${location.origin}/?seed=${encodeURIComponent($("a-seed").textContent)}`
+      : $(btn.dataset.target).textContent;
     try {
       await navigator.clipboard.writeText(text);
       toast("copied to clipboard");
@@ -330,6 +334,68 @@ function toast(msg) {
   toastTimer = setTimeout(() => { t.hidden = true; }, 1900);
 }
 
+/* ---------- dream journal ---------- */
+const SEED_RE = /^[0-9a-f]{8,32}$/;
+const journalSection = $("journal");
+
+function relTime(ts) {
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 86400 * 7) return `${Math.floor(s / 86400)} d ago`;
+  return new Date(ts).toLocaleDateString();
+}
+
+async function loadJournal() {
+  try {
+    const res = await fetch("/api/dreams?limit=12");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const dreams = await res.json();
+    if (!dreams.length) {
+      journalSection.hidden = true;
+      return;
+    }
+    journalSection.hidden = false;
+    const list = $("dream-list");
+    list.textContent = "";
+    for (const d of dreams) {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "dream-entry";
+      btn.dataset.seed = d.seed;
+      btn.innerHTML =
+        `<code class="dream-seed"></code><span class="dream-title"></span><time class="dream-time"></time>`;
+      btn.querySelector(".dream-seed").textContent = d.seed;
+      btn.querySelector(".dream-title").textContent = d.title || "untitled";
+      btn.querySelector(".dream-time").textContent = relTime(d.created_at);
+      li.appendChild(btn);
+      list.appendChild(li);
+    }
+  } catch {
+    journalSection.hidden = true;
+  }
+}
+
+async function openDream(seed) {
+  try {
+    const res = await fetch(`/dream/${seed}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+    history.replaceState(null, "", `/?seed=${seed}`);
+    render(data);
+    toast("recalled from the journal");
+  } catch (e) {
+    toast(e instanceof Error ? e.message : "could not open that dream");
+  }
+}
+
+$("dream-list").addEventListener("click", (ev) => {
+  const btn = ev.target.closest("button[data-seed]");
+  if (btn) openDream(btn.dataset.seed);
+});
+
 /* ---------- redraw on resize ---------- */
 let lastData = null;
 const origRender = render;
@@ -339,3 +405,8 @@ addEventListener("resize", () => {
   drawWave(lastData.profile.frames);
   drawSigil(lastData.artifacts.sigil);
 });
+
+/* ---------- boot: journal + ?seed= deep link ---------- */
+loadJournal();
+const bootSeed = new URLSearchParams(location.search).get("seed");
+if (bootSeed && SEED_RE.test(bootSeed)) openDream(bootSeed);

@@ -256,3 +256,39 @@ footer .icon { color: var(--color-secondary); }
   color: var(--color-accent);
   text-shadow: 0 0 10px rgba(236,72,153,.5), 0 0 28px rgba(34,211,238,.25);
 }
+
+/* ============ dream journal ============ */
+.journal { margin-top: var(--space-8); }
+.journal-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--space-2); }
+.journal-head h2 {
+  margin: 0; font: 600 13px var(--font-body); letter-spacing: .18em;
+  text-transform: uppercase; color: var(--color-secondary);
+}
+.journal-head h2 .icon { color: var(--color-accent); }
+.journal-sub { margin: 0; font-size: 13.5px; color: var(--color-faint); }
+.dream-list {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: var(--space-1);
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+}
+.dream-entry {
+  display: grid; gap: 2px; justify-items: start; text-align: left; width: 100%;
+  padding: var(--space-2); cursor: pointer;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius); color: var(--color-text);
+  font: 400 14px var(--font-body);
+  transition: border-color var(--dur), transform var(--dur), background var(--dur);
+}
+.dream-entry:hover { border-color: rgba(167,139,250,.5); transform: translateY(-2px); background: var(--color-surface-strong); }
+.dream-seed {
+  font-family: ui-monospace, "SFMono-Regular", monospace; font-size: 12.5px;
+  letter-spacing: .06em; color: var(--color-acid);
+}
+.dream-title {
+  font-weight: 500; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 100%;
+}
+.dream-time { font-size: 12px; color: var(--color-faint); }
+@media (prefers-reduced-motion: reduce) {
+  .dream-entry:hover, .dream-entry:active { transform: none; }
+}
