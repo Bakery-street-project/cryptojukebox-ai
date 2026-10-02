@@ -21,3 +21,8 @@ jobs:
         run: bunx tsc --noEmit
       - name: Tests
         run: bun test
+      - name: Edge Worker typecheck (cloudflare/)
+        run: |
+          cd cloudflare
+          bun install --frozen-lockfile
+          bunx tsc --noEmit

@@ -1,0 +1,62 @@
+/**
+ * cryptojukebox-edge — Cloudflare Worker in front of the Bun origin.
+ *
+ * x402 payment gate (adapted from Cloudflare's x402-proxy-template, MIT),
+ * dream permalinks via D1, audio serving via R2. Deploy is NOT done from
+ * this repo until a valid cfut_ token exists — see README.md runbook.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cryptojukebox-edge",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-08",
+  "observability": {
+    "enabled": true
+  },
+  // Routes are configured at deploy time once a zone exists, e.g.:
+  // "routes": [{ "pattern": "jukebox.example.com/*", "zone_name": "example.com" }],
+  "vars": {
+    // Public receive address only — the edge is verify/settle via facilitator,
+    // it never holds a key. Default is the unrecoverable dead address so a
+    // mis-deploy cannot silently collect money.
+    "PAY_TO": "0x000000000000000000000000000000000000dEaD",
+    // "base-sepolia" for testnet money, "base" only after a hardening pass.
+    "NETWORK": "base-sepolia",
+    // Routes that require one x402 payment before proxied to origin.
+    // Path-scoped only: the origin's POST /api/decode is the paid leg.
+    // GET /dream/<seed> and GET /audio/<id> stay free on purpose — a stored
+    // dream is the shareable artifact, matching origin behavior.
+    "PROTECTED_PATTERNS": [
+      {
+        "pattern": "/api/decode",
+        "price": "$0.05",
+        "description": "One neural decode: dream, idea, script, prompt, sigil"
+      }
+    ],
+    "FACILITATOR_URL": "https://x402.org/facilitator",
+    // Bun origin behind the edge. Empty until the origin has a reachable URL;
+    // while unset the Worker answers /__edge/health only and proxies 502.
+    "ORIGIN_URL": "",
+    // Turnstile: sitekey/secret are set in the dashboard (site app) and the
+    // secret via `wrangler secret put TURNSTILE_SECRET`; validation is wired
+    // in the deploy phase, not yet here. Placeholder for operator reference.
+    "TURNSTILE_SITEKEY": ""
+  },
+  // Rate limiting: wrangler 4 has no top-level `ratelimit` field — add a
+  // dashboard Settings → Rate limiting rules entry on /api/decode (per-IP)
+  // at deploy time; see README.md step 6.
+  "d1_databases": [
+    {
+      "binding": "JUKEBOX_DREAMS",
+      "database_name": "cryptojukebox-dreams",
+      "database_id": "REPLACE_WITH_D1_ID"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "AUDIO",
+      "bucket_name": "cryptojukebox-audio"
+    }
+  ],
+  "upload_source_maps": true
+}
