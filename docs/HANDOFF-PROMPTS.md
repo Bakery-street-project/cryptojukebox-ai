@@ -25,16 +25,23 @@ so it survives logout and starts at boot — no sudo involved), and
 `.github/workflows/ci.yml` runs `quality` on `[self-hosted, jukebox-ci]`
 with the `pull_request` trigger deliberately removed so fork PRs can
 never execute code on the box. First run: success in 42 s (`f826df4`).
+`stale.yml` + `dependabot-automerge.yml` now also run on the self-hosted
+runner; `remediation-scan.yml` is parked at workflow_dispatch-only
+(broken: `.github/scripts/run_audit.sh` was never committed, and its
+Dependabot-alerts input is billing-blocked).
 
 Residual work if you want it:
 1. ~~Runner persistence~~ — **done**: the runner unit restarts on failure
    (`Restart=on-failure`, `RestartSec=5`) and starts at boot via linger.
    If you ever prefer the root-managed variant instead:
    `systemctl --user disable --now actions-runner-jukebox && cd ~/actions-runner-jukebox && sudo ./svc.sh install && sudo ./svc.sh start`.
-2. **Billing itself** is still locked (github.com/settings/billing as
-   BoozeLee) — it also blocks Dependabot's updater and the CodeQL
-   workflow, which still targets `ubuntu-latest` and will keep failing.
-   Either settle billing or disable/retire the CodeQL workflow.
+2. ~~CodeQL on hosted runners~~ — **done**: default setup disabled via
+   API (`code-scanning/default-setup` → `state=not-configured`) and
+   replaced by a `codeql` job in `ci.yml` on the self-hosted runner —
+   first run green on Arch (`d00e0e0`, 3m10s, SARIF uploaded, 0 alerts).
+   **Billing itself** is still locked (github.com/settings/billing as
+   BoozeLee) — it still blocks Dependabot's updater (`dynamic/
+   dependabot/dependabot-updates` cannot start while the lock stands).
 3. Dependabot opened a `hono` update for `/cloudflare` whose updater run
    errored under the lock; re-check after billing is settled.
 
