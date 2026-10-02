@@ -37,3 +37,7 @@ Thumbs.db
 
 # Audit runtime output
 audit_results/
+
+# Cryptojukebox runtime
+.cache/
+*.log
