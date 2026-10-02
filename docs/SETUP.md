@@ -110,11 +110,24 @@ in `scripts/pay-demo.ts` for the full sequence: funded throwaway test wallet,
 
 ## 6. CI & automation
 
-- `.github/workflows/ci.yml` — typecheck + tests on every push/PR.
-- `.github/workflows/remediation-scan.yml` — Dependabot-config audit
-  (workflow_dispatch, scoped to this repo via `repos.json`).
+- CI runs on the repo's self-hosted runner `jukebox-arch` (systemd user
+  service `actions-runner-jukebox`, label `jukebox-ci`) because the
+  account's billing lock starves GitHub-hosted jobs. Fork PRs are
+  excluded from the runner by design — `ci.yml` has no `pull_request`
+  trigger.
+- `.github/workflows/ci.yml` — `quality` (typecheck + tests + cloudflare
+  typecheck) and `codeql` (SARIF to code scanning) on every push.
+- **Reviewing a PR locally** (the fork-PR gate):
+  `gh pr view <N>` to read the diff, then
+  `bun scripts/pr-check.ts <N>` — runs CI's steps against the PR in a
+  throwaway `/tmp/juke-pr-<N>` worktree; `--clean <N>` to remove it.
+  The PR's tests execute its code on your machine: review first.
 - `.github/workflows/stale.yml` — issue hygiene;
   `dependabot-automerge.yml` — auto-merge for green Dependabot patches.
+- `.github/workflows/remediation-scan.yml` — **disabled** (workflow_dispatch
+  only): its `.github/scripts/run_audit.sh` was never committed and its
+  Dependabot-alerts input is billing-blocked. Header comment says how to
+  revive it.
 - `.github/dependabot.yml` — weekly bumps for npm deps + GitHub Actions.
 
 ## 7. Troubleshooting

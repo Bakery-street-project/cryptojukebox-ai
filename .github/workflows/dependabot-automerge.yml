@@ -5,7 +5,7 @@ permissions:
   pull-requests: write
 jobs:
   dependabot:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, jukebox-ci]
     if: github.actor == 'dependabot[bot]'
     steps:
       - run: gh pr review --approve "$PR_URL"
