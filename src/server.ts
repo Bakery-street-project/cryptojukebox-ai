@@ -2,6 +2,7 @@ import { analyze } from "./features.ts";
 import { classifyUrl, IngestError, ingestSpotify, ingestUpload, ingestYoutube } from "./ingest.ts";
 import { generate } from "./generate.ts";
 import { freshDreamSeed, isDreamSeed } from "./dream/seed.ts";
+import { getDream, listDreams, recordDream } from "./journal.ts";
 import { runLif } from "./snn.ts";
 import { readPaymentsConfig } from "./payments/config.ts";
 import { buildPaymentGate } from "./payments/server.ts";
@@ -72,6 +73,13 @@ async function handleDecode(req: Request): Promise<Response> {
     spike,
     artifacts,
   };
+  // The journal must never sink a paid decode — a broken store is a logged
+  // miss, not a 500.
+  try {
+    recordDream(artifacts.dreamMeta.dreamSeed, source.title, response);
+  } catch (e) {
+    console.error("dream journal write failed:", e);
+  }
   return Response.json(response);
 }
 
@@ -106,6 +114,18 @@ async function route(req: Request): Promise<Response> {
       const status = e instanceof IngestError ? 400 : 500;
       return Response.json({ error: message }, { status });
     }
+  }
+  const dreamMatch = url.pathname.match(/^\/dream\/([0-9a-f]{8,32})$/);
+  if (req.method === "GET" && dreamMatch) {
+    const stored = getDream(dreamMatch[1]!);
+    if (!stored) return Response.json({ error: `no dream recorded for seed ${dreamMatch[1]}` }, { status: 404 });
+    return Response.json(stored.payload, {
+      headers: { "cache-control": "public, max-age=31536000, immutable" },
+    });
+  }
+  if (req.method === "GET" && url.pathname === "/api/dreams") {
+    const limit = Number(url.searchParams.get("limit") ?? 50);
+    return Response.json(listDreams(Number.isFinite(limit) ? limit : 50));
   }
   const audioMatch = url.pathname.match(/^\/audio\/([a-z0-9-]+)$/i);
   if (audioMatch) {

@@ -44,3 +44,5 @@ audit_results/
 
 # Local session handoff notes
 .Codex/
+
+.data/
