@@ -1,6 +1,7 @@
 name: CI — cryptojukebox-ai
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, master]
   pull_request:
