@@ -125,9 +125,9 @@ in `scripts/pay-demo.ts` for the full sequence: funded throwaway test wallet,
 - `.github/workflows/stale.yml` — issue hygiene;
   `dependabot-automerge.yml` — auto-merge for green Dependabot patches.
 - `.github/workflows/remediation-scan.yml` — **disabled** (workflow_dispatch
-  only): its `.github/scripts/run_audit.sh` was never committed and its
-  Dependabot-alerts input is billing-blocked. Header comment says how to
-  revive it.
+  only): `ubuntu-latest` is starved by the billing lock and its
+  Dependabot-alerts input is blocked too. The script it runs
+  (`.github/scripts/run_audit.sh` + `repos.json`) is intact.
 - `.github/dependabot.yml` — weekly bumps for npm deps + GitHub Actions.
 
 ## 7. Troubleshooting

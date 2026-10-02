@@ -26,9 +26,13 @@ so it survives logout and starts at boot — no sudo involved), and
 with the `pull_request` trigger deliberately removed so fork PRs can
 never execute code on the box. First run: success in 42 s (`f826df4`).
 `stale.yml` + `dependabot-automerge.yml` now also run on the self-hosted
-runner; `remediation-scan.yml` is parked at workflow_dispatch-only
-(broken: `.github/scripts/run_audit.sh` was never committed, and its
-Dependabot-alerts input is billing-blocked).
+runner; `remediation-scan.yml` is parked at workflow_dispatch-only — not
+because its parts are missing (`.github/scripts/run_audit.sh` and
+`repos.json` both exist and are sound) but because it still
+`runs-on: ubuntu-latest` and its Dependabot-alerts input is produced by
+the billing-blocked updater. Revival is two lines once billing is
+settled: restore the `schedule:` trigger (or flip `runs-on` to
+`[self-hosted, jukebox-ci]` — the script only needs `gh` + `jq`).
 
 Residual work if you want it:
 1. ~~Runner persistence~~ — **done**: the runner unit restarts on failure
@@ -94,12 +98,13 @@ way `src/payments/` dies.
 >    `gatePromise`/`getPaymentGate` block, and the `verdict.release` branch
 >    inside the `/api/decode` route. Nothing else in server.ts may change —
 >    the dream-journal recording and `/dream/:seed` route must survive.
-> 3. Update `docs/SETUP.md` (remove the `JUKEBOX_PAYMENTS` rows/lines, point
+> 3. Delete `tests/payments.test.ts` (12 tests) alongside the code it covers.
+> 4. Update `docs/SETUP.md` (remove the `JUKEBOX_PAYMENTS` rows/lines, point
 >    payment config at the edge) and the decision table in
 >    `docs/CLOUDFLARE.md`.
-> 4. Gates: `bun run typecheck && bun test` (expect the same 72 minus any
->    payments-only tests — there are none, so 72), then `git push`; CI must
->    be green (needs T0).
+> 5. Gates: `bun run typecheck && bun test` (expect 83 minus the 12
+>    payments-only tests = **71**), then `git push`; CI must be green
+>    (needs T0).
 > **Stop conditions:** if any doubt remains that the edge is verified, stop
 > and leave `src/payments/` in place. Never ship a moment with zero gates on
 > a public origin: sequence is off-origin-last, edge-live-first.

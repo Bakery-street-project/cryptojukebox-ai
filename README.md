@@ -42,7 +42,8 @@ music:
 link/file ──▶ ingest (yt-dlp / Spotify preview / upload)
         ──▶ ffmpeg decode to mono 22.05 kHz PCM
         ──▶ FFT feature stream (RMS, spectral centroid, flux, ZCR, chroma,
-            BPM via onset autocorrelation, Krumhansl-style key/mode)
+            BPM via onset autocorrelation, key/mode by major/minor template
+            correlation)
         ──▶ 24-neuron leaky-integrate-and-fire network with homeostatic
             threshold adaptation → spike raster ("sigil")
         ──▶ dream engine: phasic bursts → emotion-tagged replay of a memory
@@ -56,7 +57,7 @@ link/file ──▶ ingest (yt-dlp / Spotify preview / upload)
 
 ### Prerequisites
 
-- Bun 1.2+
+- Bun 1.3.14+ (CI-pinned; see `engines` in package.json)
 - ffmpeg + ffprobe (audio decode)
 - yt-dlp (YouTube ingest)
 

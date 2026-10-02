@@ -2,11 +2,11 @@ name: Dependabot Remediation Audit
 
 # DISABLED (2026-10-02): parked at manual dispatch only. The scheduled
 # runs could never succeed — `ubuntu-latest` is starved by the account
-# billing lock, and the job itself references .github/scripts/run_audit.sh
-# which does not exist in this repo. Its input (Dependabot alerts via the
-# updater) is also billing-blocked. Re-enable by restoring a `schedule:`
-# trigger, committing the missing script (or repointing this job at a
-# real audit implementation), and settling billing — in that order.
+# billing lock, and the workflow's input (Dependabot alerts, produced by
+# the dependabot-updater) is billing-blocked too. The audit script itself
+# is intact: .github/scripts/run_audit.sh (96 lines) + repos.json exist
+# and the job would run wherever `gh` and `jq` do. Re-enable by settling
+# billing and restoring a `schedule:` trigger — in that order.
 on:
   workflow_dispatch:
     inputs:
