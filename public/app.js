@@ -1,7 +1,9 @@
 "use strict";
 
 const NOTE_NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
-const REDUCED_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const reduceQuery = matchMedia("(prefers-reduced-motion: reduce)");
+let REDUCED_MOTION = reduceQuery.matches;
+reduceQuery.addEventListener("change", (ev) => { REDUCED_MOTION = ev.matches; });
 
 const $ = (id) => document.getElementById(id);
 const form = $("decode-form");
@@ -26,8 +28,12 @@ tabs.forEach((tab, i) => {
   tab.addEventListener("click", () => selectTab(tab));
   tab.addEventListener("keydown", (ev) => {
     if (ev.key === "ArrowRight" || ev.key === "ArrowLeft") {
+      // two tabs: ±1 mod 2 is the same move either way
       ev.preventDefault();
-      selectTab(tabs[(i + (ev.key === "ArrowRight" ? 1 : 1)) % 2]);
+      selectTab(tabs[(i + 1) % 2]);
+    } else if (ev.key === "Home" || ev.key === "End") {
+      ev.preventDefault();
+      selectTab(tabs[ev.key === "Home" ? 0 : tabs.length - 1]);
     }
   });
 });
@@ -230,7 +236,6 @@ function doRender(data) {
   $("m-val").textContent = num(p.valence, 2);
   $("m-arou").textContent = num(p.arousal, 2);
   $("m-sync").textContent = num(data.spike.sync != null ? data.spike.sync * 100 : NaN, "%");
-  $("ms-bpm").hidden = !p.bpm;
 
   const arts = data.artifacts;
   $("a-dream").textContent = str(arts.dream);
@@ -262,7 +267,9 @@ function doRender(data) {
     player.hidden = false;
   }
 
+  const firstShow = results.hidden;
   results.hidden = false;
+  if (firstShow) results.focus({ preventScroll: true });
   if (!REDUCED_MOTION) {
     [...document.querySelectorAll("#results .metric, #results .card, .wave-wrap")].forEach((el, i) => {
       el.classList.remove("reveal");
@@ -323,12 +330,22 @@ function drawWave(frames) {
 function drawSigil(raster) {
   const timeRows = raster.split("\n").filter(Boolean);
   const neurons = timeRows.reduce((m, r) => Math.max(m, r.length), 1);
-  const { ctx, w } = sizeCanvas($("sigil-canvas"), 1);
-  const cell = Math.max(2, Math.min(14, Math.floor((w - 8) / timeRows.length), Math.floor(360 / neurons) - 2));
+  const canvas = $("sigil-canvas");
+  // Cell from the measured scroll container; no height cap — a dense raster
+  // may exceed the container and scrolls inside .sigil-scroll instead of
+  // shrinking to illegibility.
+  const avail = canvas.parentElement.clientWidth;
+  const cell = Math.max(2, Math.min(14, Math.floor((avail - 8) / timeRows.length)));
+  const cssWidth = Math.max(avail, timeRows.length * (cell + 2) + 8);
   const cssHeight = neurons * (cell + 2) + 8;
-  sizeCanvas($("sigil-canvas"), cssHeight);
-  const g = $("sigil-canvas").getContext("2d");
-  g.clearRect(0, 0, w, cssHeight);
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  canvas.width = Math.floor(cssWidth * dpr);
+  canvas.height = Math.floor(cssHeight * dpr);
+  canvas.style.width = `${cssWidth}px`;
+  canvas.style.height = `${cssHeight}px`;
+  const g = canvas.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, cssWidth, cssHeight);
   for (let t = 0; t < timeRows.length; t++) {
     for (let n = 0; n < neurons; n++) {
       const x = t * (cell + 2) + 4;
@@ -374,7 +391,9 @@ function toast(msg) {
 
 /* ---------- dream journal ---------- */
 const SEED_RE = /^[0-9a-f]{8,32}$/;
-const journalSection = $("journal");
+const JOURNAL_PAGE = 12;
+let journalOffset = 0;
+let journalFailed = false;
 
 function relTime(ts) {
   const s = Math.max(0, (Date.now() - ts) / 1000);
@@ -385,36 +404,75 @@ function relTime(ts) {
   return new Date(ts).toLocaleDateString();
 }
 
-async function loadJournal() {
-  try {
-    const res = await fetch("/api/dreams?limit=12");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const dreams = await res.json();
-    if (!dreams.length) {
-      journalSection.hidden = true;
-      return;
-    }
-    journalSection.hidden = false;
-    const list = $("dream-list");
-    list.textContent = "";
-    for (const d of dreams) {
-      const li = document.createElement("li");
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "dream-entry";
-      btn.dataset.seed = d.seed;
-      btn.innerHTML =
-        `<code class="dream-seed"></code><span class="dream-title"></span><time class="dream-time"></time>`;
-      btn.querySelector(".dream-seed").textContent = d.seed;
-      btn.querySelector(".dream-title").textContent = d.title || "untitled";
-      btn.querySelector(".dream-time").textContent = relTime(d.created_at);
-      li.appendChild(btn);
-      list.appendChild(li);
-    }
-  } catch {
-    journalSection.hidden = true;
+async function fetchDreams(offset) {
+  const res = await fetch(`/api/dreams?limit=${JOURNAL_PAGE}&offset=${offset}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const dreams = await res.json();
+  if (!Array.isArray(dreams)) throw new Error("bad journal payload");
+  return dreams;
+}
+
+function appendDreams(dreams) {
+  const list = $("dream-list");
+  for (const d of dreams) {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "dream-entry";
+    btn.dataset.seed = d.seed;
+    btn.innerHTML =
+      `<code class="dream-seed"></code><span class="dream-title"></span><time class="dream-time"></time>`;
+    btn.querySelector(".dream-seed").textContent = d.seed;
+    btn.querySelector(".dream-title").textContent = d.title || "untitled";
+    btn.querySelector(".dream-time").textContent = relTime(d.created_at);
+    li.appendChild(btn);
+    list.appendChild(li);
   }
 }
+
+function setJournalState(dreams) {
+  const empty = dreams.length === 0;
+  $("journal-empty").hidden = !(empty && !journalFailed);
+  $("journal-retry").hidden = !journalFailed;
+  $("journal-more").hidden = empty || journalFailed || dreams.length < JOURNAL_PAGE;
+  $("export-link").hidden = empty || journalFailed;
+  $("journal-status").textContent = journalFailed
+    ? "couldn't read the journal — the decoder still works."
+    : empty
+      ? "no dreams yet — decode something."
+      : "every dream this machine has had, kept by its seed";
+}
+
+async function loadJournal() {
+  journalOffset = 0;
+  journalFailed = false;
+  $("dream-list").textContent = "";
+  try {
+    const dreams = await fetchDreams(0);
+    journalOffset = dreams.length;
+    appendDreams(dreams);
+    setJournalState(dreams);
+  } catch {
+    journalFailed = true;
+    setJournalState([]);
+  }
+}
+
+$("journal-more").addEventListener("click", async () => {
+  const btn = $("journal-more");
+  btn.disabled = true;
+  try {
+    const more = await fetchDreams(journalOffset);
+    journalOffset += more.length;
+    appendDreams(more);
+    btn.hidden = more.length < JOURNAL_PAGE;
+  } catch {
+    toast("couldn't load more dreams");
+  } finally {
+    btn.disabled = false;
+  }
+});
+$("journal-retry").addEventListener("click", () => loadJournal());
 
 async function openDream(seed) {
   const epoch = ++renderEpoch;
@@ -439,10 +497,14 @@ $("dream-list").addEventListener("click", (ev) => {
 });
 
 /* ---------- redraw on resize ---------- */
+let resizeTimer = null;
 addEventListener("resize", () => {
-  if (!lastData || results.hidden) return;
-  drawWave(lastData.profile.frames);
-  drawSigil(lastData.artifacts.sigil);
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (!lastData || results.hidden) return;
+    if (Array.isArray(lastData.profile.frames) && lastData.profile.frames.length) drawWave(lastData.profile.frames);
+    if (typeof lastData.artifacts.sigil === "string" && lastData.artifacts.sigil) drawSigil(lastData.artifacts.sigil);
+  }, 150);
 });
 
 /* ---------- boot: journal + ?seed= deep link ---------- */

@@ -115,9 +115,9 @@
     </form>
   </section>
 
-  <section id="results" class="results" aria-label="Decoded output" hidden>
+  <section id="results" class="results" aria-label="Decoded output" tabindex="-1" hidden>
     <div class="metrics" id="metrics">
-      <div class="metric glass"><b id="m-bpm">–</b><span>BPM</span><i id="ms-bpm" class="pulse"></i></div>
+      <div class="metric glass"><b id="m-bpm">–</b><span>BPM</span></div>
       <div class="metric glass"><b id="m-key">–</b><span>key</span></div>
       <div class="metric glass"><b id="m-val">–</b><span>valence</span></div>
       <div class="metric glass"><b id="m-arou">–</b><span>arousal</span></div>
@@ -135,7 +135,9 @@
       <article class="card glass"><header><h2>Generation prompt</h2><button class="copy" type="button" data-target="a-prompt" aria-label="Copy prompt to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><p id="a-prompt" data-text></p></article>
       <article class="card glass"><header><h2>Engine</h2></header><p class="engine-note" id="engine"></p></article>
       <article class="card glass wide sigil"><header><h2>Neural sigil</h2><span class="sigil-sub" id="sigil-sub"></span></header>
-        <canvas id="sigil-canvas" role="img" aria-label="Raster plot of neuron spikes during the decode"></canvas>
+        <div class="sigil-scroll">
+          <canvas id="sigil-canvas" role="img" aria-label="Raster plot of neuron spikes during the decode"></canvas>
+        </div>
         <div class="phosphene" id="phosphene-wrap" hidden>
           <span class="phosphene-label">hypnagogic strip · firing rate as luminance</span>
           <div class="phosphene-line" id="a-phosphene" aria-hidden="true"></div>
@@ -150,6 +152,12 @@
       <p class="journal-sub" id="journal-status">every dream this machine has had, kept by its seed</p>
     </header>
     <ol id="dream-list" class="dream-list" aria-label="Previously recorded dreams"></ol>
+    <p id="journal-empty" class="journal-empty" hidden>no dreams yet — decode something.</p>
+    <div class="journal-actions">
+      <button id="journal-retry" class="journal-btn" type="button" hidden>retry</button>
+      <button id="journal-more" class="journal-btn" type="button" hidden>Load more</button>
+      <a id="export-link" class="journal-btn" href="/api/dreams/export" download hidden>Export all (.ndjson)</a>
+    </div>
   </section>
 </main>
 

@@ -1,7 +1,7 @@
 /* ============ tokens ============ */
 :root {
   --color-primary: #7c3aed;
-  --color-secondary: #6366f1;
+  --color-secondary: #818cf8;
   --color-accent: #ec4899;
   --color-acid: #34f5c5;
   --color-bg: #0a0518;
@@ -172,7 +172,6 @@ audio { width: 100%; }
 .metric { padding: var(--space-2); text-align: center; }
 .metric b { display: block; font-family: var(--font-display); font-size: 26px; color: #fff; letter-spacing: .02em; }
 .metric span { display: block; margin-top: 2px; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--color-muted); }
-.metric .pulse { display: none; }
 
 .wave-wrap { padding: var(--space-1); }
 #wave { display: block; width: 100%; height: 150px; }
@@ -196,6 +195,8 @@ audio { width: 100%; }
 .engine-note { color: var(--color-muted); }
 .sigil-sub { font-size: 12px; color: var(--color-faint); letter-spacing: .06em; }
 #sigil-canvas { display: block; width: 100%; height: auto; border-radius: 12px; background: var(--color-bg-deep); }
+.sigil-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--color-border) transparent; }
+.results:focus-visible, #results:focus { outline: none; }
 
 /* ============ footer / toast ============ */
 footer { text-align: center; padding: var(--space-4) var(--space-2) var(--space-6); color: var(--color-faint); font-size: 13.5px; }
@@ -291,6 +292,20 @@ footer .icon { color: var(--color-secondary); }
   white-space: nowrap; max-width: 100%;
 }
 .dream-time { font-size: 12px; color: var(--color-faint); }
+.journal-empty { margin: var(--space-1) 0 0; font-size: 14px; color: var(--color-faint); font-style: italic; }
+.journal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); margin-top: var(--space-2); }
+.journal-btn {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 8px 20px;
+  background: transparent; border: 1px solid var(--color-border); border-radius: 999px;
+  color: var(--color-muted); font: 600 14px var(--font-body); letter-spacing: .03em;
+  text-decoration: none; cursor: pointer;
+  transition: color var(--dur), border-color var(--dur), background var(--dur);
+}
+.journal-btn:hover { color: var(--color-acid); border-color: var(--color-acid); background: rgba(52,245,197,.06); }
+.journal-btn:disabled { opacity: .55; cursor: progress; }
+.phosphene-line { scrollbar-width: thin; scrollbar-color: var(--color-border) transparent; }
+.seed-chip { flex-wrap: wrap; min-width: 0; }
+.seed-chip code { overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) {
   .dream-entry:hover, .dream-entry:active { transform: none; }
 }
