@@ -14,25 +14,25 @@ transaction; never run two payment gates at once.
 
 ---
 
-## T0 — Unblock GitHub CI (prerequisite: fix billing)
+## T0 — GitHub CI (RESOLVED via self-hosted runner, 2026-10-02)
 
-**Blocked on:** account locked for billing — every Actions job dies with
-"The job was not started because your account is locked due to a billing
-issue" before running. Push itself works.
+The account-level billing lock still kills every GitHub-*hosted* job
+(CI and CodeQL alike), so CI was moved off them: the repo now has a
+self-hosted runner **jukebox-arch** (label `jukebox-ci`, install at
+`~/actions-runner-jukebox/`, started with `nohup ./run.sh`), and
+`.github/workflows/ci.yml` runs `quality` on `[self-hosted, jukebox-ci]`
+with the `pull_request` trigger deliberately removed so fork PRs can
+never execute code on the box. First run: success in 42 s (`f826df4`).
 
-> **Prompt:** The GitHub account behind `Bakery-street-project` is locked for
-> billing and no Actions job will start. In repo `cryptojukebox-ai`:
-> 1. Confirm the lock is lifted: `gh run list --limit 3` should show a run
->    that actually executes (steps appear, runtime > 10 s).
-> 2. Re-run the latest failed CI: `gh run rerun $(gh run list --limit 1
->    --json databaseId -q '.[0].databaseId') --failed`.
-> 3. Acceptance: the `quality` job (typecheck + `bun test`, 72 tests) and the
->    new `cd cloudflare && bunx tsc --noEmit` step both pass on commit ≥
->    `cb051c2`. If they fail, fix the code — do not edit the workflow to
->    paper over it.
-> 4. Also confirm Dependabot's open `hono` update PR for `/cloudflare` now
->    builds; review and merge only if CI is green and `bun install` in
->    `cloudflare/` still produces a frozen-lockfile install.
+Residual work if you want it:
+1. **Runner persistence** — it dies on reboot/logout. Make it a service:
+   `cd ~/actions-runner-jukebox && sudo ./svc.sh install && sudo ./svc.sh start`.
+2. **Billing itself** is still locked (github.com/settings/billing as
+   BoozeLee) — it also blocks Dependabot's updater and the CodeQL
+   workflow, which still targets `ubuntu-latest` and will keep failing.
+   Either settle billing or disable/retire the CodeQL workflow.
+3. Dependabot opened a `hono` update for `/cloudflare` whose updater run
+   errored under the lock; re-check after billing is settled.
 
 ## T1 — Deploy the Cloudflare edge Worker (prerequisite: valid `cfut_` token)
 
