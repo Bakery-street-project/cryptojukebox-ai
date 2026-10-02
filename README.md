@@ -5,7 +5,9 @@ dreams in artifacts: unrepeatable psychedelic dreams, project ideas, film
 scripts, image-generation prompts, and a neural spike-train sigil, all derived
 from a real DSP → spiking-neural-network analysis pipeline. One song, one
 dream per listen — every decode draws fresh entropy and carries its
-`dreamSeed`, and pasting that seed back recalls the identical dream. Runs
+`dreamSeed`, and pasting that seed back recalls the identical dream — and
+since the dream journal, every dream this machine has dreamed is kept in a
+local SQLite store, linkable at `/?seed=…` without re-decoding. Runs
 entirely locally on [Bun](https://bun.com); no account, no telemetry.
 
 ## The dream engine (mechanism-inspired synthesis)
@@ -83,6 +85,11 @@ bun run typecheck  # strict TypeScript check
   `dreamSeed` (field or JSON key, 8–32 hex): omit it and the decode draws
   fresh entropy (a dream nobody has had); send the seed from a previous
   response's `artifacts.dreamMeta.dreamSeed` to recall that exact dream.
+- `GET /dream/:seed` — the **dream journal**: every successful decode is
+  recorded locally (`.data/dreams.db`, SQLite, path via `JUKEBOX_DATA_DIR`),
+  first seed wins, and the stored payload is served back byte-identical with
+  an immutable cache header. The UI links each dream at `/?seed=…`.
+- `GET /api/dreams?limit=` — newest-first journal index (seed, title, time).
 - `GET /audio/:id` — streams previously decoded cached audio.
 
 When the payment gate is enabled (`JUKEBOX_PAYMENTS=mock|x402-testnet`) an
@@ -99,7 +106,7 @@ Spotify-preview ingest — see `.env.example`.
 ## Project layout
 
 ```
-src/        dsp.ts features.ts snn.ts generate.ts ingest.ts server.ts
+src/        dsp.ts features.ts snn.ts generate.ts ingest.ts journal.ts server.ts
 src/dream/  the mechanism engine (bank bursts replay walk executive arc
             residue render formats seed engine)
 src/payments/  x402 fee gate (config / mock / server)

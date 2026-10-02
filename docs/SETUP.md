@@ -51,6 +51,10 @@ cp .env.example .env   # .env is gitignored, never commit secrets
   is a **public receive address only**: the server is watch/settle-only and
   must never hold a private key or seed phrase. `x402-testnet` requires the
   facilitator URL; `mock` settles fake payments locally for E2E tests.
+- `JUKEBOX_DATA_DIR` (default `.data/`) — where the dream journal
+  (`dreams.db`, SQLite) lives. Every successful decode is recorded there by
+  seed; delete the file to forget everything. The journal never blocks a
+  decode: a broken store is a logged miss, not a 500.
 
 ## 4. Run
 

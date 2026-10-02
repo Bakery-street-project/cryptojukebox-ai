@@ -15,7 +15,7 @@ stored anywhere.
 | 1 | Turnstile + rate-limiting rules on `POST /api/decode` | S | small | Rate rules are dashboard-only (wrangler 4 has no top-level `ratelimit` field). Turnstile widget verification is not yet wired in the prep Worker — runbook step 7. |
 | 2 | R2 for audio serving/retention (`GET /audio/<id>`) | M | **prep: `cloudflare/` dir** | Decode itself stays on the Bun origin (ffmpeg); the edge Worker serves R2 objects and falls through while the bucket is empty. KV's 25 MiB cap ruled it out. |
 | 3 | x402 at the edge (`cloudflare/src/index.ts`, adapted from `x402-proxy-template`, MIT) | M | **prep committed; deploy blocked on token** | Decision recorded: the edge replaces `src/payments/`, one layer only. Retirement sequence: deploy → verify 402/pay/cookie/D1-row → origin `JUKEBOX_PAYMENTS=off` → follow-up commit deletes `src/payments/`. |
-| 4 | D1 for `dreamSeed → artifacts` permalinks (`GET /dream/<seed>`) | M | **prep: schema.sql + in-flight recorder** | The edge records paid decode responses as they pass through, so the origin stays stateless. Recall then survives anything that happens to the origin process. |
+| 4 | D1 for `dreamSeed → artifacts` permalinks (`GET /dream/<seed>`) | M | **prep: schema.sql + in-flight recorder** | The origin now keeps its own local dream journal (`.data/dreams.db`, same schema); D1 is the durable cloud copy the edge records as paid decodes pass through, so recall survives anything that happens to the origin process. |
 | 5 | Cloudflare Analytics Engine for PV/UV | S | later | Nice-to-have telemetry; app itself stays telemetry-free by design. |
 
 ## Explicitly ruled out

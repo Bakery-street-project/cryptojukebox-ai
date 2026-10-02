@@ -58,6 +58,10 @@ Secrets permissions.
 > seed,title FROM dreams"` shows the row;
 > (c) `GET /dream/<seed>` returns the byte-identical artifacts JSON;
 > (d) hammering `/api/decode` triggers the rate rule (**429**).
+> **Before deploying:** the origin now keeps its own dream journal
+> (`src/journal.ts`), so update `cloudflare/src/index.ts`: `GET /dream/<seed>`
+> must fall through to the origin on a D1 miss instead of returning 404 —
+> dreams journaled before the edge existed stay linkable.
 > **Stop conditions:** any failure at (a)–(d) → do NOT proceed to T2. Do not
 > touch `src/payments/` in this task. Do not wire Turnstile unless the
 > sitekey verification code is actually added first (README step 7 note).
@@ -74,9 +78,11 @@ way `src/payments/` dies.
 >    has no hot reload); confirm `POST /api/decode` on the origin alone no
 >    longer 402s while the edge still gates it.
 > 2. Delete `src/payments/` (config.ts, mock.ts, server.ts, types.ts) and
->    its seam in `src/server.ts`: the three imports at lines 6–8, the
->    `gatePromise`/`getPaymentGate` block at ~14–20, and the verdict branch
->    at ~93–102. Nothing else in server.ts may change.
+>    its seam in `src/server.ts` — locate by symbol, not line number: the
+>    `readPaymentsConfig`/`buildPaymentGate`/`PaymentGate` imports, the
+>    `gatePromise`/`getPaymentGate` block, and the `verdict.release` branch
+>    inside the `/api/decode` route. Nothing else in server.ts may change —
+>    the dream-journal recording and `/dream/:seed` route must survive.
 > 3. Update `docs/SETUP.md` (remove the `JUKEBOX_PAYMENTS` rows/lines, point
 >    payment config at the edge) and the decision table in
 >    `docs/CLOUDFLARE.md`.
