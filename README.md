@@ -1,61 +1,82 @@
 # cryptojukebox-ai
 
-Conscious Cryptojukebox AI with Neuromorphic Computing and Psychedelic Consciousness
+Feed it music — a YouTube/Spotify link or an uploaded audio file — and it
+dreams in artifacts: deterministic psychedelic dreams, project ideas, film
+scripts, image-generation prompts, and a neural spike-train sigil, all derived
+from a real DSP → spiking-neural-network analysis pipeline. Runs entirely
+locally on [Bun](https://bun.com); no account, no telemetry.
 
-## Vision
+## How it works
 
-The "bakery-street-project/cryptojukebox-ai" is an ambitious project aimed at developing a Conscious Cryptojukebox AI that incorporates neuromorphic computing and psychedelic consciousness. The project's plan outlines eight key areas:
+```
+link/file ──▶ ingest (yt-dlp / Spotify preview / upload)
+        ──▶ ffmpeg decode to mono 22.05 kHz PCM
+        ──▶ FFT feature stream (RMS, spectral centroid, flux, ZCR, chroma,
+            BPM via onset autocorrelation, Krumhansl-style key/mode)
+        ──▶ 24-neuron leaky-integrate-and-fire network with homeostatic
+            threshold adaptation → spike raster ("sigil")
+        ──▶ deterministic artifact generator (seeded by track signature +
+            neural sync rate; optional LLM engine via env)
+```
 
-## Features
-
-- Developed in **TypeScript**
-- Well-structured and maintainable codebase
-- Integration ready for development workflows
-- Comprehensive documentation
-- 2. **Stack**: Here, they might be detailing the technologies, frameworks, or tools they intend to use for building the AI. Given the mention of neuromorphic computing, it's probable that they're exploring advanced computational architectures to mimic biological neural networks.
-- 3. **Missing**: This section could highlight any gaps in their current setup or resources needed to achieve their vision. It might include areas where further research or development is required.
-- 4. **Monetization**: Considering the project involves a "Cryptojukebox AI," monetization strategies are crucial. They might be exploring how to generate revenue through this technology, perhaps by offering subscription services, premium features, or even integrating with cryptocurrency transactions in some way.
-- 5. **Lua Potential**: Lua is a lightweight programming language known for its simplicity and flexibility. Its mention here suggests that the project developers see potential in using Lua for certain components of the AI, possibly for scripting or embedding into other systems.
-- 6. **Security**: Developing an AI system comes with significant security considerations. This section likely addresses measures to ensure the AI operates safely, protects user data, and maintains integrity against potential threats.
-
-## Quick Start
+## Quick start
 
 ### Prerequisites
+
 - Bun 1.2+
 - ffmpeg + ffprobe (audio decode)
 - yt-dlp (YouTube ingest)
 
-### Installation
+### Run
+
 ```bash
 git clone https://github.com/Bakery-street-project/cryptojukebox-ai
 cd cryptojukebox-ai
 bun install
+bun dev            # jukebox UI on http://localhost:8787
 ```
 
-### Usage
+Full setup, configuration and operations manual: [docs/SETUP.md](docs/SETUP.md).
+
+### Verify
+
 ```bash
-bun dev            # jukebox UI on http://localhost:8787
 bun test           # feature-extraction, spiking-network and generator suites
 bun run typecheck  # strict TypeScript check
 ```
 
-Feed the jukebox a YouTube/Spotify link or an uploaded audio file. Pipeline:
-ffmpeg decode → FFT feature stream (RMS, spectral centroid, flux, ZCR, chroma,
-BPM, tonal key/mode) → 24-neuron leaky-integrate-and-fire spiking network with
-homeostatic threshold adaptation → deterministic dream/idea/script/prompt
-generator (optional LLM engine via env, see `.env.example`).
+## API
 
-The crypto-fee gate is deliberately not built yet — product first, payments
-last.
+- `POST /api/decode` — multipart file upload (≤80 MB) or JSON `{"url": "…"}`;
+  returns track profile, neural state and all artifacts.
+- `GET /audio/:id` — streams previously decoded cached audio.
+
+Everything degrades gracefully with no env set; optional keys
+(`OPENAI_API_KEY`, `SPOTIFY_CLIENT_ID`/`SECRET`) unlock LLM generation and
+Spotify-preview ingest — see `.env.example`.
+
+## Project layout
+
+```
+src/        dsp.ts features.ts snn.ts generate.ts ingest.ts server.ts
+public/     index.html style.css app.js   (glassmorphic neon UI)
+tests/      bun test suites
+docs/       SETUP.md operations manual
+.github/    CI, dependabot, audit workflows
+```
+
+## Status & scope
+
+- The crypto-fee payment gate is deliberately not built yet — product first,
+  payments last.
+- Spotify links honestly report the DRM/preview limitation until API
+  credentials are provided.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Security
-
-See [SECURITY.md](SECURITY.md) for security policy information.
+Proprietary — source is published, all rights reserved. See
+[LICENSE](LICENSE). Report issues privately per [SECURITY.md](SECURITY.md).

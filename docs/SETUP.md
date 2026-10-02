@@ -1,0 +1,108 @@
+# Setup & Operations Manual
+
+Everything needed to install, configure, run and maintain cryptojukebox-ai.
+
+## 1. Requirements
+
+| Tool | Min version | Purpose |
+|------|-------------|---------|
+| [Bun](https://bun.com) | 1.2 | runtime, package manager, bundler, test runner |
+| ffmpeg + ffprobe | any recent | decode any input to mono 22.05 kHz PCM |
+| yt-dlp | latest | YouTube audio ingest |
+
+Install on Arch-based systems:
+
+```bash
+sudo pacman -S ffmpeg
+bunx yt-dlp --version   # yt-dlp via bun/npx, or: sudo pacman -S python-yt-dlp
+curl -fsSL https://bun.sh/install | bash
+```
+
+On Debian/Ubuntu: `sudo apt install ffmpeg`, `pipx install yt-dlp`.
+
+## 2. Install
+
+```bash
+git clone https://github.com/Bakery-street-project/cryptojukebox-ai
+cd cryptojukebox-ai
+bun install            # deterministic: bun.lock is committed
+```
+
+## 3. Configure
+
+All configuration is environment variables; everything is optional and the
+app degrades gracefully (see `.env.example`):
+
+```bash
+cp .env.example .env   # .env is gitignored, never commit secrets
+```
+
+- `PORT` (default 8787) — HTTP listen port.
+- `OPENAI_API_KEY` + `JUKEBOX_LLM_MODEL` (+ optional `OPENAI_BASE_URL`) —
+  replace the deterministic local generator with LLM-authored artifacts.
+  Unset → fully local, seeded, reproducible generation.
+- `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` — Spotify ingest via the
+  official 30-second preview endpoint (DRM limitation is reported honestly
+  when unset).
+
+## 4. Run
+
+```bash
+bun dev        # or: bun start — UI at http://localhost:8787
+```
+
+Decoded audio is cached under `.cache/` (gitignored). Deleting `.cache/` is
+always safe.
+
+### Run as a service (systemd)
+
+```ini
+# /etc/systemd/system/cryptojukebox.service
+[Unit]
+Description=cryptojukebox-ai
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/cryptojukebox-ai
+ExecStart=/usr/bin/env bun src/server.ts
+Restart=on-failure
+EnvironmentFile=/opt/cryptojukebox-ai/.env
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## 5. Verify
+
+```bash
+bun test           # DSP, spiking-network, generator suites
+bun run typecheck  # strict TypeScript (noUncheckedIndexedAccess et al.)
+```
+
+Manual smoke test: open the UI, upload any mp3/wav/ogg, confirm BPM/key/
+valence/arousal metrics, waveform canvas, four artifact cards and the neural
+sigil render.
+
+## 6. CI & automation
+
+- `.github/workflows/ci.yml` — typecheck + tests on every push/PR.
+- `.github/workflows/remediation-scan.yml` — Dependabot-config audit
+  (workflow_dispatch, scoped to this repo via `repos.json`).
+- `.github/workflows/stale.yml` — issue hygiene;
+  `dependabot-automerge.yml` — auto-merge for green Dependabot patches.
+- `.github/dependabot.yml` — weekly bumps for npm deps + GitHub Actions.
+
+## 7. Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `ffmpeg: command not found` | install ffmpeg (step 1) |
+| YouTube link fails | `bunx yt-dlp -U` (extractor rot is common) |
+| Spotify link returns "DRM" error | expected without API creds — see step 3 |
+| Port already in use | `PORT=8788 bun dev` |
+| LLM artifacts look identical every run | `OPENAI_API_KEY`/`JUKEBOX_LLM_MODEL` unset → local deterministic engine (by design; the engine badge on the sigil card shows which is active) |
+
+## 8. Out of scope (deliberate)
+
+- Crypto-fee payment gate: build-last per project guardrails; no payment
+  code exists yet and none should be expected in this repo.

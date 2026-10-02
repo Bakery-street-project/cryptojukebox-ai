@@ -41,3 +41,6 @@ audit_results/
 # Cryptojukebox runtime
 .cache/
 *.log
+
+# Local session handoff notes
+.Codex/
