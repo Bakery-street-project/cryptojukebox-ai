@@ -80,12 +80,17 @@ export function dreamState(profile: TrackProfile, spike: SpikeState, seedBits: n
   };
 }
 
-export function runDream(profile: TrackProfile, spike: SpikeState, opts?: DreamOptions): Artifacts {
+export interface DreamOutcome {
+  state: DreamState;
+  artifacts: Artifacts;
+}
+
+export function runDreamWithState(profile: TrackProfile, spike: SpikeState, opts?: DreamOptions): DreamOutcome {
   const bank = opts?.bank ?? DEFAULT_BANK;
   const seedBits = opts?.dreamSeed === undefined ? signatureSeed(profile, spike) : dreamSeedToBits(opts.dreamSeed);
   const state = dreamState(profile, spike, seedBits, bank);
 
-  return {
+  const artifacts: Artifacts = {
     dream: state.text,
     idea: renderIdea(state.nodes, profile, state.residues),
     script: renderScript(state.nodes, profile),
@@ -102,4 +107,9 @@ export function runDream(profile: TrackProfile, spike: SpikeState, opts?: DreamO
       phosphene: state.phosphene,
     },
   };
+  return { state, artifacts };
+}
+
+export function runDream(profile: TrackProfile, spike: SpikeState, opts?: DreamOptions): Artifacts {
+  return runDreamWithState(profile, spike, opts).artifacts;
 }

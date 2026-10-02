@@ -1,7 +1,7 @@
 import { analyze } from "./features.ts";
 import { classifyUrl, IngestError, ingestSpotify, ingestUpload, ingestYoutube } from "./ingest.ts";
 import { generate } from "./generate.ts";
-import { isDreamSeed } from "./dream/seed.ts";
+import { freshDreamSeed, isDreamSeed } from "./dream/seed.ts";
 import { runLif } from "./snn.ts";
 import { readPaymentsConfig } from "./payments/config.ts";
 import { buildPaymentGate } from "./payments/server.ts";
@@ -61,7 +61,8 @@ async function handleDecode(req: Request): Promise<Response> {
 
   const profile = analyze(source.samples, source.sampleRate, source.title);
   const spike = runLif(profile);
-  const artifacts = await generate(profile, spike, dreamSeed === undefined ? undefined : { dreamSeed });
+  // Unrepeatable by default: a decode with no recall seed draws fresh entropy.
+  const artifacts = await generate(profile, spike, { dreamSeed: dreamSeed ?? freshDreamSeed() });
 
   const response: DecodeResponse = {
     id: source.id,

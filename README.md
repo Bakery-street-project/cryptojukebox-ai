@@ -1,10 +1,36 @@
 # cryptojukebox-ai
 
 Feed it music — a YouTube/Spotify link or an uploaded audio file — and it
-dreams in artifacts: deterministic psychedelic dreams, project ideas, film
+dreams in artifacts: unrepeatable psychedelic dreams, project ideas, film
 scripts, image-generation prompts, and a neural spike-train sigil, all derived
-from a real DSP → spiking-neural-network analysis pipeline. Runs entirely
-locally on [Bun](https://bun.com); no account, no telemetry.
+from a real DSP → spiking-neural-network analysis pipeline. One song, one
+dream per listen — every decode draws fresh entropy and carries its
+`dreamSeed`, and pasting that seed back recalls the identical dream. Runs
+entirely locally on [Bun](https://bun.com); no account, no telemetry.
+
+## The dream engine (mechanism-inspired synthesis)
+
+The generator models how a sleeping brain builds narratives — it is a
+mechanism-inspired synthesis, not a claim that the machine "understands" your
+music:
+
+- **Phasic bursts (M1)** — the track's own spectral-flux peaks fire timed
+  activation events the narrative cannot veto.
+- **Emotion-tagged replay (M2)** — fragments of a 240-memory association bank
+  are selected by how well their affect matches what the track measures, with
+  a never-zero tail so strange intrusions stay possible.
+- **Executive collapse (M3)** — measured texture chaos lowers an
+  executive-index: fewer logical connectors, more passive voice, absurdity
+  accepted without comment.
+- **Hyperpriming (M4)** — the walk follows weak, remote associations a waking
+  engine would reject, with capped hard cuts.
+- **Threat-simulation arc (M5)**, **day residue (M6)** — the track title leaks
+  in, distorted, at most twice.
+- **Reconstructive recall (M7)** — scenes fade (clear/hazy/gone) before being
+  spoken; the idea/script/prompt are the *same dream* re-recalled in other
+  formats, never new inventions.
+- **Hypnagogic layer (M8)** — the sigil raster and phosphene strip are direct
+  measurements of the spiking network.
 
 ## How it works
 
@@ -15,8 +41,11 @@ link/file ──▶ ingest (yt-dlp / Spotify preview / upload)
             BPM via onset autocorrelation, Krumhansl-style key/mode)
         ──▶ 24-neuron leaky-integrate-and-fire network with homeostatic
             threshold adaptation → spike raster ("sigil")
-        ──▶ deterministic artifact generator (seeded by track signature +
-            neural sync rate; optional LLM engine via env)
+        ──▶ dream engine: phasic bursts → emotion-tagged replay of a memory
+            bank → associative walk under reduced executive function →
+            tension arc → reconstructive recall rendering
+        ──▶ fresh entropy per decode (recallable via dreamSeed; optional LLM
+            re-telling via env)
 ```
 
 ## Quick start
@@ -48,7 +77,10 @@ bun run typecheck  # strict TypeScript check
 ## API
 
 - `POST /api/decode` — multipart file upload (≤80 MB) or JSON `{"url": "…"}`;
-  returns track profile, neural state and all artifacts.
+  returns track profile, neural state and all artifacts. Optional
+  `dreamSeed` (field or JSON key, 8–32 hex): omit it and the decode draws
+  fresh entropy (a dream nobody has had); send the seed from a previous
+  response's `artifacts.dreamMeta.dreamSeed` to recall that exact dream.
 - `GET /audio/:id` — streams previously decoded cached audio.
 
 When the payment gate is enabled (`JUKEBOX_PAYMENTS=mock|x402-testnet`) an
@@ -66,6 +98,8 @@ Spotify-preview ingest — see `.env.example`.
 
 ```
 src/        dsp.ts features.ts snn.ts generate.ts ingest.ts server.ts
+src/dream/  the mechanism engine (bank bursts replay walk executive arc
+            residue render formats seed engine)
 src/payments/  x402 fee gate (config / mock / server)
 public/     index.html style.css app.js   (glassmorphic neon UI)
 scripts/    pay-demo.ts — x402 testnet client that pays for one decode

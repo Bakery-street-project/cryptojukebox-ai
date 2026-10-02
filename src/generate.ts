@@ -1,9 +1,29 @@
 import type { Artifacts, SpikeState, TrackProfile } from "./types.ts";
-import { runDream, type DreamOptions } from "./dream/engine.ts";
-import { NOTE_NAMES } from "./dream/formats.ts";
+import { runDreamWithState, type DreamOptions } from "./dream/engine.ts";
+import type { DreamState } from "./dream/types.ts";
+
+/** The scene as the mechanism walked it — what the LLM is allowed to re-tell. */
+function dreamBrief(profile: TrackProfile, state: DreamState): string {
+  const peak = state.arc.reduce((best, p) => (p.tension > best.tension ? p : best), state.arc[0] ?? { node: 0, tension: 0 });
+  return JSON.stringify({
+    title: profile.title,
+    firstDraft: state.text,
+    walkedScene: state.nodes.map((n) => ({
+      fragment: n.frag.words[0] ?? n.frag.id.replace(/_/g, " "),
+      category: n.frag.cat,
+      arrivedBy: n.via,
+      mood: [n.frag.v, n.frag.a],
+    })),
+    recallFades: state.fades,
+    dayResidue: state.residues,
+    tensionPeakAtNode: peak.node,
+    executiveFunction: state.exec.execIndex,
+    recallConfidence: state.recallConfidence,
+  });
+}
 
 export async function generate(profile: TrackProfile, spike: SpikeState, opts?: DreamOptions): Promise<Artifacts> {
-  const local = runDream(profile, spike, opts);
+  const { state, artifacts: local } = runDreamWithState(profile, spike, opts);
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.JUKEBOX_LLM_MODEL;
   if (!apiKey || !model) return local;
@@ -20,23 +40,9 @@ export async function generate(profile: TrackProfile, spike: SpikeState, opts?: 
           {
             role: "system",
             content:
-              "You are the dream engine of a psychedelic neuromorphic jukebox. Given decoded musical state, emit JSON with keys dream, idea, script, prompt. dream: 3-4 sentences of second-person oneiric narrative. idea: one buildable creative concept. script: a 5-line film scene. prompt: an image-generation prompt. Never mention the analysis numbers directly; transmute them.",
+              "You are the waking re-teller of a neuromorphic jukebox. A dream mechanism (phasic bursts, affect-weighted replay, an associative walk under reduced executive function) has already walked a scene and narrated it roughly. Your job is only to re-tell that dream in better prose. Rules: use nothing but the walked fragments, the associations recorded in arrivedBy, and the day-residue words — inventing a new fragment betrays the dream. Keep the odd that the fades mark as hazy or gone; do not tidy it. Never mention analysis numbers or the mechanism. dream: 3-6 sentences, second person. idea: one buildable creative concept from the same fragments. script: a 5-line film scene. prompt: an image-generation prompt. Emit JSON with keys dream, idea, script, prompt.",
           },
-          {
-            role: "user",
-            content: JSON.stringify({
-              title: profile.title,
-              bpm: profile.bpm,
-              key: NOTE_NAMES[profile.tonal.key % 12],
-              mode: profile.tonal.mode,
-              valence: profile.valence,
-              arousal: profile.arousal,
-              brightness: profile.brightness,
-              dynamism: profile.dynamism,
-              neural_mean_firing_rate: spike.meanRate,
-              neural_synchrony: spike.sync,
-            }),
-          },
+          { role: "user", content: dreamBrief(profile, state) },
         ],
       }),
     });

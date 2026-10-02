@@ -14,3 +14,10 @@ export function dreamSeedToBits(seed: string): number {
 export function bitsToDreamSeed(bits: number): string {
   return (bits >>> 0).toString(16).padStart(8, "0");
 }
+
+/** Fresh 8-hex entropy: every listen dreams something nobody has heard before. */
+export function freshDreamSeed(): string {
+  const bytes = new Uint8Array(4);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+}

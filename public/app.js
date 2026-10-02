@@ -101,6 +101,12 @@ form.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   setFieldError("url", "url-error", "");
   setFieldError("file", "file-error", "");
+  setFieldError("recall-seed", "recall-error", "");
+  const seed = $("recall-seed").value.trim().toLowerCase();
+  if (seed && !/^[0-9a-f]{8,32}$/.test(seed)) {
+    setFieldError("recall-seed", "recall-error", "A dream seed is 8–32 hex characters — or leave it empty to dream something new.");
+    return;
+  }
   const file = fileInput.files[0];
   const url = $("url").value.trim();
   if (!file && !url) {
@@ -122,12 +128,13 @@ form.addEventListener("submit", async (ev) => {
     if (file) {
       const fd = new FormData();
       fd.append("file", file);
+      if (seed) fd.append("dreamSeed", seed);
       res = await fetch("/api/decode", { method: "POST", body: fd });
     } else {
       res = await fetch("/api/decode", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify(seed ? { url, dreamSeed: seed } : { url }),
       });
     }
     const data = await res.json().catch(() => ({}));
@@ -191,9 +198,16 @@ function render(data) {
   $("a-idea").textContent = data.artifacts.idea;
   $("a-script").textContent = data.artifacts.script;
   $("a-prompt").textContent = data.artifacts.prompt;
+  const meta = data.artifacts.dreamMeta;
+  if (meta && meta.dreamSeed) {
+    $("a-seed").textContent = meta.dreamSeed;
+    $("seed-wrap").hidden = false;
+  } else {
+    $("seed-wrap").hidden = true;
+  }
   $("engine").textContent = data.artifacts.engine === "llm"
-    ? "Language-model dream engine (OpenAI-compatible endpoint). Deterministic local engine stands by when no key is configured."
-    : "Deterministic local dream engine — seeded by this track's neural signature. Same song, same dream.";
+    ? "Language-model re-telling of the scene the mechanism walked — the seed and the numbers stay the machine's own. Recall this dream by its seed."
+    : "Mechanism-inspired dream engine — phasic bursts, affect-weighted replay and an associative walk under reduced executive function. One song, one dream per listen; paste the seed back to recall it exactly.";
   $("sigil-sub").textContent = `${data.spike.rates.length} neurons · mean firing ${(data.spike.meanRate * 100).toFixed(1)}%`;
 
   drawWave(p.frames);

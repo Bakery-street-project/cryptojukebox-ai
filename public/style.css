@@ -226,3 +226,19 @@ footer .icon { color: var(--color-secondary); }
   .card:hover, .decode:hover, .decode:active, .tab:active, .copy:active { transform: none; }
   * { transition-duration: 1ms !important; }
 }
+
+/* ---------- dream seed + recall ---------- */
+.recall { margin-top: var(--space-2); }
+.recall .recall-opt {
+  display: block; font-size: 12px; font-weight: 400;
+  letter-spacing: .04em; text-transform: none; color: var(--color-faint);
+}
+.seed-chip {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: var(--color-muted);
+  background: rgba(167,139,250,.12); border: 1px solid var(--color-border); border-radius: 999px;
+  padding: 2px 4px 2px 10px;
+}
+.seed-chip code { font-family: ui-monospace, "SFMono-Regular", monospace; letter-spacing: .06em; color: var(--color-text); }
+.chip-copy { min-height: 0; padding: 3px 5px; background: transparent; border-color: transparent; }
+.chip-copy:hover { border-color: transparent; }

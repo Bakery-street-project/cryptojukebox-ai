@@ -44,7 +44,8 @@
   <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-disc"/></svg> side B of the machine</p>
   <h1>CRYPTO<span>JUKEBOX</span></h1>
   <p class="tagline">Feed it music. A spiking neural network listens to the whole track —
-    then it dreams in scripts, ideas and sigils.</p>
+    then it dreams in scripts, ideas and sigils.
+    One song, one dream per listen — recallable by seed.</p>
 </header>
 
 <main>
@@ -81,6 +82,13 @@
         </div>
         <p id="file-name" class="field-hint" hidden></p>
         <p id="file-error" class="field-error" hidden></p>
+      </div>
+
+      <div class="recall">
+        <label for="recall-seed" class="field-label">Recall a dream <span class="recall-opt">optional · 8–32 hex · empty dreams something new</span></label>
+        <input id="recall-seed" name="dreamSeed" type="text" autocomplete="off" spellcheck="false"
+               maxlength="32" placeholder="paste a dream seed, e.g. 5f3a9c22" aria-describedby="recall-error" />
+        <p id="recall-error" class="field-error" hidden></p>
       </div>
 
       <button id="decode" class="decode" type="submit">
@@ -121,7 +129,7 @@
     </div>
 
     <div class="cards">
-      <article class="card glass"><header><h2>Dream</h2><button class="copy" type="button" data-target="a-dream" aria-label="Copy dream to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><p id="a-dream" data-text></p></article>
+      <article class="card glass"><header><h2>Dream</h2><span class="seed-chip" id="seed-wrap" hidden>seed <code id="a-seed"></code><button class="copy chip-copy" type="button" data-target="a-seed" aria-label="Copy dream seed to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></span><button class="copy" type="button" data-target="a-dream" aria-label="Copy dream to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><p id="a-dream" data-text></p></article>
       <article class="card glass"><header><h2>Idea</h2><button class="copy" type="button" data-target="a-idea" aria-label="Copy idea to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><p id="a-idea" data-text></p></article>
       <article class="card glass wide"><header><h2>Script</h2><button class="copy" type="button" data-target="a-script" aria-label="Copy script to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><pre id="a-script" data-text></pre></article>
       <article class="card glass"><header><h2>Generation prompt</h2><button class="copy" type="button" data-target="a-prompt" aria-label="Copy prompt to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><p id="a-prompt" data-text></p></article>

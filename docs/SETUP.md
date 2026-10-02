@@ -39,8 +39,9 @@ cp .env.example .env   # .env is gitignored, never commit secrets
 
 - `PORT` (default 8787) — HTTP listen port.
 - `OPENAI_API_KEY` + `JUKEBOX_LLM_MODEL` (+ optional `OPENAI_BASE_URL`) —
-  replace the deterministic local generator with LLM-authored artifacts.
-  Unset → fully local, seeded, reproducible generation.
+  have the LLM re-tell the walked dream in prose. The scene graph, `dreamSeed`
+  and every measured value stay the machine's own either way; unset → the local
+  mechanism engine (recall by seed is identical in both modes).
 - `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` — Spotify ingest via the
   official 30-second preview endpoint (DRM limitation is reported honestly
   when unset).
@@ -120,7 +121,7 @@ in `scripts/pay-demo.ts` for the full sequence: funded throwaway test wallet,
 | YouTube link fails | `bunx yt-dlp -U` (extractor rot is common) |
 | Spotify link returns "DRM" error | expected without API creds — see step 3 |
 | Port already in use | `PORT=8788 bun dev` |
-| LLM artifacts look identical every run | `OPENAI_API_KEY`/`JUKEBOX_LLM_MODEL` unset → local deterministic engine (by design; the engine badge on the sigil card shows which is active) |
+| Dream text is identical on every decode | a `dreamSeed` is stuck in the recall field — clear it and each decode draws fresh entropy (the engine badge on the dream card shows which engine is active) |
 | `POST /api/decode` returns 402 | payment gate is on (`JUKEBOX_PAYMENTS=mock|x402-testnet`) — set it to `off` for free decoding, or pay with an `X-PAYMENT` header |
 
 ## 8. Out of scope (deliberate)
