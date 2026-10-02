@@ -25,24 +25,25 @@ if (!Number.isInteger(pr) || pr <= 0) {
 
 const wt = `/tmp/juke-pr-${pr}`;
 const branch = `pr-${pr}`;
-const git = (...args: string[]): string[] => ["git", "-C", ".", ...args];
+const run = (cmd: string[]): Promise<number> =>
+  Bun.spawn(cmd, { stdout: "inherit", stderr: "inherit" }).exited;
 
 if (prFlag) {
-  const { exitCode } = await Bun.$`git worktree remove ${wt} --force`.nothrow();
-  const { exitCode: rc2 } = await Bun.$`git branch -D ${branch}`.nothrow();
-  console.log(`cleaned: worktree ${exitCode === 0 ? "removed" : "absent"}, branch ${rc2 === 0 ? "deleted" : "absent"}`);
+  const wtOk = (await run(["git", "worktree", "remove", wt, "--force"])) === 0;
+  const brOk = (await run(["git", "branch", "-D", branch])) === 0;
+  console.log(`cleaned: worktree ${wtOk ? "removed" : "absent"}, branch ${brOk ? "deleted" : "absent"}`);
   process.exit(0);
 }
 
-const fetch = await Bun.$`git fetch origin ${`pull/${pr}/head:${branch}`} --force`.nothrow();
-if (fetch.exitCode !== 0) {
-  console.error(String.fromCharCode(...fetch.stderr.bytes()));
+// Drop any stale worktree first: git refuses to fetch into a branch
+// that is checked out somewhere.
+if (existsSync(wt)) await run(["git", "worktree", "remove", wt, "--force"]);
+if ((await run(["git", "fetch", "origin", `pull/${pr}/head:${branch}`, "--force"])) !== 0) {
+  console.error(`could not fetch pull/${pr}/head from origin`);
   process.exit(1);
 }
-if (existsSync(wt)) await Bun.$`git worktree remove ${wt} --force`;
-const add = await Bun.$`git worktree add ${wt} ${branch}`.nothrow();
-if (add.exitCode !== 0) {
-  console.error(String.fromCharCode(...add.stderr.bytes()));
+if ((await run(["git", "worktree", "add", wt, branch])) !== 0) {
+  console.error(`could not create worktree ${wt}`);
   process.exit(1);
 }
 
@@ -50,7 +51,8 @@ const steps: Step[] = [
   { name: "bun install --frozen-lockfile", cmd: ["bun", "install", "--frozen-lockfile"] },
   { name: "tsc --noEmit", cmd: ["bunx", "tsc", "--noEmit"] },
   { name: "bun test", cmd: ["bun", "test"] },
-  { name: "cloudflare tsc --noEmit", cmd: ["bunx", "tsc", "--noEmit"], cwd: "cloudflare" },
+  { name: "install", cmd: ["bun", "install", "--frozen-lockfile"], cwd: "cloudflare" },
+  { name: "tsc --noEmit", cmd: ["bunx", "tsc", "--noEmit"], cwd: "cloudflare" },
 ];
 
 const results: { name: string; ok: boolean; secs: number }[] = [];
@@ -60,8 +62,7 @@ for (const s of steps) {
     cwd: `${wt}/${s.cwd ?? ""}`,
     stdout: "inherit",
     stderr: "inherit",
-  }).exited;
-  results.push({ name: `${s.cwd ? `${s.cwd}/ ` : ""}${s.name}`, ok: r === 0, secs: (performance.now() - t0) / 1000 });
+  }).exited;  results.push({ name: `${s.cwd ? `${s.cwd}/ ` : ""}${s.name}`, ok: r === 0, secs: (performance.now() - t0) / 1000 });
 }
 
 const width = Math.max(...results.map(r => r.name.length));
