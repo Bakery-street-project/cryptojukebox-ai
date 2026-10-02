@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Cryptojukebox — a neuromorphic dream engine. Feed it a track, it listens and generates dreams, ideas, scripts and prompts." />
+<title>Cryptojukebox — neuromorphic dream engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Righteous&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<a class="skip-link" href="#console">Skip to the decoder</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-wave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M3 12h2M7 7v10M11 4v16M15 8v8M19 11h2M19 11v2" />
+    </symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 14a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L14 3M14 10a5 5 0 0 0-7.07 0L4.1 12.83a5 5 0 0 0 7.07 7.07L11 21" />
+    </symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 16V4m0 0 4 4m-4-4L8 8" /><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
+    </symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" />
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
+    </symbol>
+    <symbol id="i-disc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="2.5" />
+    </symbol>
+  </defs>
+</svg>
+
+<header class="hero">
+  <div class="hero-orb" aria-hidden="true"></div>
+  <p class="kicker"><svg class="icon" aria-hidden="true"><use href="#i-disc"/></svg> side B of the machine</p>
+  <h1>CRYPTO<span>JUKEBOX</span></h1>
+  <p class="tagline">Feed it music. A spiking neural network listens to the whole track —
+    then it dreams in scripts, ideas and sigils.</p>
+</header>
+
+<main>
+  <section id="console" class="console glass" aria-labelledby="console-title" aria-busy="false">
+    <h2 id="console-title" class="visually-hidden">Decoder console</h2>
+
+    <div class="tabs" role="tablist" aria-label="Music source">
+      <button class="tab" role="tab" id="tab-link" aria-controls="panel-link" aria-selected="true" type="button">
+        <svg class="icon" aria-hidden="true"><use href="#i-link"/></svg> Link
+      </button>
+      <button class="tab" role="tab" id="tab-file" aria-controls="panel-file" aria-selected="false" tabindex="-1" type="button">
+        <svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg> Upload
+      </button>
+    </div>
+
+    <form id="decode-form" novalidate>
+      <div id="panel-link" role="tabpanel" aria-labelledby="tab-link" class="tabpanel">
+        <label for="url" class="field-label">Track link</label>
+        <input id="url" name="url" type="text" inputmode="url" autocomplete="off" spellcheck="false"
+               placeholder="https://youtube.com/watch… or an open.spotify.com track"
+               aria-describedby="url-hint url-error" />
+        <p id="url-hint" class="field-hint">YouTube works out of the box. Spotify decodes its 30-second preview when API credentials are configured.</p>
+        <p id="url-error" class="field-error" hidden></p>
+      </div>
+
+      <div id="panel-file" role="tabpanel" aria-labelledby="tab-file" class="tabpanel" hidden>
+        <label for="file" class="field-label">Audio file</label>
+        <div class="dropzone" id="dropzone">
+          <svg class="icon dropzone-icon" aria-hidden="true"><use href="#i-upload"/></svg>
+          <p>Drop a track here, or <span class="linklike">browse</span></p>
+          <input id="file" name="file" type="file" class="sr-only-file"
+                 accept=".mp3,.ogg,.flac,.wav,.m4a,.mp4,.webm,audio/*,video/*"
+                 aria-describedby="file-error" />
+        </div>
+        <p id="file-name" class="field-hint" hidden></p>
+        <p id="file-error" class="field-error" hidden></p>
+      </div>
+
+      <button id="decode" class="decode" type="submit">
+        <svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg>
+        <span>Decode the music</span>
+      </button>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <div id="progress" class="progress" hidden><i></i></div>
+
+      <div class="player" id="player-wrap" hidden>
+        <label for="player" class="field-label">Now dreaming from</label>
+        <audio id="player" controls></audio>
+      </div>
+    </form>
+  </section>
+
+  <section id="results" class="results" aria-label="Decoded output" hidden>
+    <div class="metrics" id="metrics">
+      <div class="metric glass"><b id="m-bpm">–</b><span>BPM</span><i id="ms-bpm" class="pulse"></i></div>
+      <div class="metric glass"><b id="m-key">–</b><span>key</span></div>
+      <div class="metric glass"><b id="m-val">–</b><span>valence</span></div>
+      <div class="metric glass"><b id="m-arou">–</b><span>arousal</span></div>
+      <div class="metric glass"><b id="m-sync">–</b><span>neural sync</span></div>
+    </div>
+
+    <div class="wave-wrap glass">
+      <canvas id="wave" role="img" aria-label="Waveform of the decoded track"></canvas>
+    </div>
+
+    <div class="cards">
+      <article class="card glass"><header><h2>Dream</h2><button class="copy" type="button" data-target="a-dream" aria-label="Copy dream to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><p id="a-dream" data-text></p></article>
+      <article class="card glass"><header><h2>Idea</h2><button class="copy" type="button" data-target="a-idea" aria-label="Copy idea to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><p id="a-idea" data-text></p></article>
+      <article class="card glass wide"><header><h2>Script</h2><button class="copy" type="button" data-target="a-script" aria-label="Copy script to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><pre id="a-script" data-text></pre></article>
+      <article class="card glass"><header><h2>Generation prompt</h2><button class="copy" type="button" data-target="a-prompt" aria-label="Copy prompt to clipboard"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg></button></header><p id="a-prompt" data-text></p></article>
+      <article class="card glass"><header><h2>Engine</h2></header><p class="engine-note" id="engine"></p></article>
+      <article class="card glass wide sigil"><header><h2>Neural sigil</h2><span class="sigil-sub" id="sigil-sub"></span></header>
+        <canvas id="sigil-canvas" role="img" aria-label="Raster plot of neuron spikes during the decode"></canvas>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p><svg class="icon" aria-hidden="true"><use href="#i-wave"/></svg> the crypto-fee gate is deliberately unbuilt — product first, payments last.</p>
+</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script src="/app.js"></script>
+</body>
+</html>
