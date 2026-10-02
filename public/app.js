@@ -77,13 +77,22 @@ const STAGES = [
   "spiking 24 neurons across the whole song…",
   "dreaming the artifacts…",
 ];
+// A decode submit and a journal click both want to own the screen. Whoever
+// took it last wins: every async completion checks its captured epoch and
+// no-ops when a newer render has superseded it.
+let renderEpoch = 0;
 let stageTimer = null;
-function startStages() {
+function startStages(epoch) {
   let i = 0;
   statusEl.textContent = STAGES[0];
   progressEl.hidden = false;
   consoleSection.setAttribute("aria-busy", "true");
   stageTimer = setInterval(() => {
+    if (epoch !== renderEpoch) {
+      clearInterval(stageTimer);
+      stageTimer = null;
+      return;
+    }
     i = Math.min(i + 1, STAGES.length - 1);
     statusEl.textContent = STAGES[i];
   }, 4000);
@@ -116,12 +125,13 @@ form.addEventListener("submit", async (ev) => {
     return;
   }
 
+  const epoch = ++renderEpoch;
   $("decode").disabled = true;
   results.hidden = true;
   player.hidden = true;
   $("player-wrap").hidden = true;
   $("gate").hidden = true;
-  startStages();
+  startStages(epoch);
 
   try {
     let res;
@@ -138,6 +148,7 @@ form.addEventListener("submit", async (ev) => {
       });
     }
     const data = await res.json().catch(() => ({}));
+    if (epoch !== renderEpoch) return;
     if (res.status === 402) {
       stopStages();
       showGate(res, data);
@@ -148,8 +159,12 @@ form.addEventListener("submit", async (ev) => {
     render(data);
     loadJournal();
   } catch (e) {
+    if (epoch !== renderEpoch) return;
     stopStages();
-    const msg = e instanceof Error ? e.message : String(e);
+    // fetch rejects with a TypeError only when the request never completed.
+    const msg = e instanceof TypeError
+      ? "can't reach the jukebox — is the server running? Press Decode to retry."
+      : e instanceof Error ? e.message : String(e);
     if (file) setFieldError("file", "file-error", msg);
     else setFieldError("url", "url-error", msg);
   } finally {
@@ -186,20 +201,43 @@ function showGate(res, data) {
 }
 
 /* ---------- render ---------- */
+let lastData = null;
+const num = (v, decimals) =>
+  typeof v === "number" && Number.isFinite(v) ? (decimals != null ? v.toFixed(decimals) : String(Math.round(v))) : "—";
+const str = (v) => (typeof v === "string" && v ? v : "—");
+
 function render(data) {
+  try {
+    if (!data || typeof data !== "object" || !data.profile || !data.spike || !data.artifacts) {
+      throw new Error("incomplete decode payload");
+    }
+    lastData = data;
+    doRender(data);
+  } catch (e) {
+    results.hidden = true;
+    stopStages();
+    toast(e instanceof Error ? `could not display the result — ${e.message}` : "could not display the result");
+  }
+}
+
+function doRender(data) {
   const p = data.profile;
-  countUp($("m-bpm"), Math.round(p.bpm) || 0, "");
-  $("m-key").textContent = `${NOTE_NAMES[p.tonal.key % 12]} ${p.tonal.mode}`;
-  countUp($("m-val"), p.valence, "decimal");
-  countUp($("m-arou"), p.arousal, "decimal");
-  countUp($("m-sync"), Math.round(data.spike.sync * 100), "%");
+  const tonal = p.tonal;
+  countUp($("m-bpm"), Number.isFinite(p.bpm) ? Math.round(p.bpm) : 0, "");
+  $("m-key").textContent = tonal && Number.isFinite(tonal.key)
+    ? `${NOTE_NAMES[tonal.key % 12]} ${str(tonal.mode)}`
+    : "—";
+  $("m-val").textContent = num(p.valence, 2);
+  $("m-arou").textContent = num(p.arousal, 2);
+  $("m-sync").textContent = num(data.spike.sync != null ? data.spike.sync * 100 : NaN, "%");
   $("ms-bpm").hidden = !p.bpm;
 
-  $("a-dream").textContent = data.artifacts.dream;
-  $("a-idea").textContent = data.artifacts.idea;
-  $("a-script").textContent = data.artifacts.script;
-  $("a-prompt").textContent = data.artifacts.prompt;
-  const meta = data.artifacts.dreamMeta;
+  const arts = data.artifacts;
+  $("a-dream").textContent = str(arts.dream);
+  $("a-idea").textContent = str(arts.idea);
+  $("a-script").textContent = str(arts.script);
+  $("a-prompt").textContent = str(arts.prompt);
+  const meta = arts.dreamMeta;
   if (meta && meta.dreamSeed && SEED_RE.test(meta.dreamSeed)) {
     $("a-seed").textContent = meta.dreamSeed;
     $("seed-wrap").hidden = false;
@@ -207,19 +245,19 @@ function render(data) {
   } else {
     $("seed-wrap").hidden = true;
   }
-  $("engine").textContent = data.artifacts.engine === "llm"
+  $("engine").textContent = arts.engine === "llm"
     ? "Language-model re-telling of the scene the mechanism walked — the seed and the numbers stay the machine's own. Recall this dream by its seed."
     : "Mechanism-inspired dream engine — phasic bursts, affect-weighted replay and an associative walk under reduced executive function. One song, one dream per listen; paste the seed back to recall it exactly.";
-  $("sigil-sub").textContent = `${data.spike.rates.length} neurons · mean firing ${(data.spike.meanRate * 100).toFixed(1)}%`;
-  const phosphene = data.artifacts.dreamMeta.phosphene;
-  $("a-phosphene").textContent = phosphene;
+  $("sigil-sub").textContent = `${data.spike.rates?.length ?? "—"} neurons · mean firing ${num(data.spike.meanRate != null ? data.spike.meanRate * 100 : NaN, 1)}%`;
+  const phosphene = meta?.phosphene;
+  $("a-phosphene").textContent = str(phosphene);
   $("phosphene-wrap").hidden = !phosphene;
 
-  drawWave(p.frames);
-  drawSigil(data.artifacts.sigil);
+  if (Array.isArray(p.frames) && p.frames.length) drawWave(p.frames);
+  if (typeof arts.sigil === "string" && arts.sigil) drawSigil(arts.sigil);
 
-  if (data.sourceKind === "upload") {
-    player.src = `/audio/${data.id}`;
+  if (data.sourceKind === "upload" && data.id) {
+    player.src = `/audio/${encodeURIComponent(data.id)}`;
     $("player-wrap").hidden = false;
     player.hidden = false;
   }
@@ -379,14 +417,18 @@ async function loadJournal() {
 }
 
 async function openDream(seed) {
+  const epoch = ++renderEpoch;
+  stopStages();
   try {
     const res = await fetch(`/dream/${seed}`);
     const data = await res.json().catch(() => ({}));
+    if (epoch !== renderEpoch) return;
     if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
     history.replaceState(null, "", `/?seed=${seed}`);
     render(data);
     toast("recalled from the journal");
   } catch (e) {
+    if (epoch !== renderEpoch) return;
     toast(e instanceof Error ? e.message : "could not open that dream");
   }
 }
@@ -397,9 +439,6 @@ $("dream-list").addEventListener("click", (ev) => {
 });
 
 /* ---------- redraw on resize ---------- */
-let lastData = null;
-const origRender = render;
-render = (data) => { lastData = data; origRender(data); };
 addEventListener("resize", () => {
   if (!lastData || results.hidden) return;
   drawWave(lastData.profile.frames);

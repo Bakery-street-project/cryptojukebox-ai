@@ -56,6 +56,9 @@ body {
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
 }
+/* The UA [hidden] rule must beat class display rules (tabpanel, results);
+   without !important, `.tabpanel { display: block }` renders hidden panels. */
+[hidden] { display: none !important; }
 :focus-visible { outline: 3px solid var(--color-ring); outline-offset: 3px; border-radius: 6px; }
 
 /* ============ hero ============ */
@@ -148,7 +151,6 @@ input[aria-invalid="true"] { border-color: var(--color-danger); }
 .status { min-height: 1.5em; margin: var(--space-2) 0 0; color: var(--color-acid); font-size: 14px; text-align: center; }
 
 .gate { margin-top: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius); }
-.gate[hidden] { display: none; }
 .gate-title { margin: 0; display: flex; align-items: center; gap: var(--space-1); font: 600 13px var(--font-body); letter-spacing: .18em; text-transform: uppercase; color: var(--color-accent); }
 .gate-facts { margin: var(--space-2) 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-1) var(--space-2); }
 .gate-facts dt { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--color-faint); }
