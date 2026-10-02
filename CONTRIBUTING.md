@@ -19,6 +19,23 @@ If a contribution has been agreed:
 3. `bun test && bun run typecheck` must pass
 4. Open a Pull Request against `main`
 
+## Reviewing a pull request
+
+CI runs on the project's self-hosted runner and is deliberately
+push-only — fork PR code never executes there. So PR verification is a
+local, human-invoked check:
+
+```bash
+gh pr view <N>          # read the diff and discussion first
+bun scripts/pr-check.ts <N>   # CI's steps, run in a throwaway /tmp worktree
+bun scripts/pr-check.ts --clean <N>
+```
+
+Note what you are agreeing to: `pr-check` runs the PR's tests, which
+means running its code on your machine under your account. That is the
+standard tradeoff of not giving forks a runner — read the diff before
+you run it, and don't check out PRs you wouldn't execute.
+
 ## Code of conduct
 
 Be respectful and assume good faith. Harassment or bad-faith participation
