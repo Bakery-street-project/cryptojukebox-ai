@@ -16,7 +16,7 @@ music:
 
 - **Phasic bursts (M1)** — the track's own spectral-flux peaks fire timed
   activation events the narrative cannot veto.
-- **Emotion-tagged replay (M2)** — fragments of a 240-memory association bank
+- **Emotion-tagged replay (M2)** — fragments of a 435-memory association bank
   are selected by how well their affect matches what the track measures, with
   a never-zero tail so strange intrusions stay possible.
 - **Executive collapse (M3)** — measured texture chaos lowers an
