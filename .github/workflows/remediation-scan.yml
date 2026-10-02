@@ -27,10 +27,8 @@ jobs:
     permissions:
       # Required to read Dependabot alerts via GitHub API
       contents: read
-      # Required to fetch repository metadata
-      metadata: read
       # Required for GET /repos/{owner}/{repo}/dependabot/alerts
-      security_events: read
+      security-events: read
       # Required if publishing results as artifacts or creating issues
       issues: write
       pull-requests: read
@@ -109,9 +107,11 @@ jobs:
           SUMMARY_FILE=$(ls -t "${{ env.AUDIT_OUTPUT_DIR }}/audit_summary_"*.txt | head -1)
           
           if [ -f "$SUMMARY_FILE" ]; then
-            echo "## Dependabot Audit Results" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## Dependabot Audit Results"
+              echo ""
+              cat "$SUMMARY_FILE"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Create issue if critical vulnerabilities found
@@ -128,9 +128,9 @@ jobs:
                 --title "⚠️ Critical Dependabot Alerts Found ($CRITICAL_COUNT)" \
                 --body "Audit run detected $CRITICAL_COUNT critical severity vulnerabilities.
 
-See audit results in the workflow artifacts for full details.
+          See audit results in the workflow artifacts for full details.
 
-**Action Required:** Review and remediate these vulnerabilities immediately." \
+          **Action Required:** Review and remediate these vulnerabilities immediately." \
                 --label "security,dependabot" \
                 || echo "Issue creation skipped (repository is not writable or issue already exists)"
             fi
