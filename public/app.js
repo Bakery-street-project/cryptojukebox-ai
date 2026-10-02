@@ -114,6 +114,7 @@ form.addEventListener("submit", async (ev) => {
   results.hidden = true;
   player.hidden = true;
   $("player-wrap").hidden = true;
+  $("gate").hidden = true;
   startStages();
 
   try {
@@ -129,7 +130,12 @@ form.addEventListener("submit", async (ev) => {
         body: JSON.stringify({ url }),
       });
     }
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 402) {
+      stopStages();
+      showGate(res, data);
+      return;
+    }
     if (!res.ok) throw new Error(data.error ?? `decode failed (HTTP ${res.status})`);
     stopStages();
     render(data);
@@ -142,6 +148,34 @@ form.addEventListener("submit", async (ev) => {
     $("decode").disabled = false;
   }
 });
+
+/* ---------- x402 payment gate ---------- */
+const NET_NAMES = { "eip155:84532": "Base Sepolia (testnet)", "eip155:8453": "Base mainnet" };
+
+function showGate(res, data) {
+  let reqs = Array.isArray(data.paymentRequirements) ? data.paymentRequirements : null;
+  if (!reqs) {
+    const enc = res.headers.get("x-payment-required");
+    if (enc) {
+      try {
+        const decoded = JSON.parse(atob(enc));
+        reqs = Array.isArray(decoded.paymentRequirements)
+          ? decoded.paymentRequirements
+          : Array.isArray(decoded.paymentCapabilities) ? decoded.paymentCapabilities : null;
+      } catch { /* malformed challenge — fall through */ }
+    }
+  }
+  const req = reqs && reqs[0];
+  const amount = req?.maxAmountRequired != null ? (Number(req.maxAmountRequired) / 1e6).toFixed(2) + " USDC" : "–";
+  $("gate-error").textContent = data.error ?? "Payment required";
+  $("gate-price").textContent = amount;
+  $("gate-network").textContent = NET_NAMES[req?.network] ?? req?.network ?? "x402";
+  $("gate-payto").textContent = req?.payTo ?? "–";
+  $("gate").hidden = false;
+  const msg = "This track needs an x402 payment first (" + amount + " on " + (NET_NAMES[req?.network] ?? req?.network ?? "x402") + ").";
+  const onLinkTab = $("tab-link").getAttribute("aria-selected") === "true";
+  if (onLinkTab) setFieldError("url", "url-error", msg); else setFieldError("file", "file-error", msg);
+}
 
 /* ---------- render ---------- */
 function render(data) {

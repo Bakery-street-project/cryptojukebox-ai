@@ -11,6 +11,11 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "viem": "^2.57.2"
+  },
+  "dependencies": {
+    "@x402/core": "^2.28.0",
+    "@x402/evm": "^2.28.0"
   }
 }

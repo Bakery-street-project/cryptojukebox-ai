@@ -2,10 +2,22 @@ import { analyze } from "./features.ts";
 import { classifyUrl, IngestError, ingestSpotify, ingestUpload, ingestYoutube } from "./ingest.ts";
 import { generate } from "./generate.ts";
 import { runLif } from "./snn.ts";
+import { readPaymentsConfig } from "./payments/config.ts";
+import { buildPaymentGate } from "./payments/server.ts";
+import type { PaymentGate } from "./payments/types.ts";
 import type { DecodeResponse } from "./types.ts";
 
 const PORT = Number(process.env.PORT ?? 8787);
 const PUBLIC_DIR = new URL("../public/", import.meta.url).pathname;
+
+let gatePromise: Promise<PaymentGate | null> | null = null;
+async function getPaymentGate(): Promise<PaymentGate | null> {
+  gatePromise ??= (async () => {
+    const cfg = readPaymentsConfig(process.env);
+    return cfg ? buildPaymentGate(cfg) : null;
+  })();
+  return gatePromise;
+}
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -68,6 +80,16 @@ async function route(req: Request): Promise<Response> {
   const url = new URL(req.url);
   if (req.method === "POST" && url.pathname === "/api/decode") {
     try {
+      const gate = await getPaymentGate();
+      if (gate) {
+        const verdict = await gate.verifyAndSettle(req);
+        if (!verdict.release) {
+          return Response.json(verdict.body, { status: verdict.status, headers: verdict.headers });
+        }
+        const paid = await handleDecode(req);
+        for (const [name, value] of Object.entries(verdict.settleHeaders)) paid.headers.set(name, value);
+        return paid;
+      }
       return await handleDecode(req);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -99,5 +121,9 @@ async function route(req: Request): Promise<Response> {
   return new Response("not found", { status: 404 });
 }
 
-const server = Bun.serve({ port: PORT, fetch: route });
-console.log(`cryptojukebox dreaming on http://localhost:${server.port}`);
+if (import.meta.main) {
+  const server = Bun.serve({ port: PORT, fetch: route });
+  console.log(`cryptojukebox dreaming on http://localhost:${server.port}`);
+}
+
+export { route };

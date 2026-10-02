@@ -33,6 +33,9 @@
     <symbol id="i-disc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="2.5" />
     </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6l-7-3z" /><path d="m9.5 12 2 2 3.5-4" />
+    </symbol>
   </defs>
 </svg>
 
@@ -87,6 +90,16 @@
       <p id="status" class="status" role="status" aria-live="polite"></p>
       <div id="progress" class="progress" hidden><i></i></div>
 
+      <aside id="gate" class="glass gate" aria-live="polite" hidden>
+        <p class="gate-title"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> <span id="gate-error">Payment required</span></p>
+        <dl class="gate-facts">
+          <div><dt>Price</dt><dd id="gate-price">–</dd></div>
+          <div><dt>Network</dt><dd id="gate-network">–</dd></div>
+          <div><dt>Pay to</dt><dd id="gate-payto" class="gate-mono">–</dd></div>
+        </dl>
+        <p class="gate-hint">x402 test mode: attach an <code>X-PAYMENT</code> header to <code>POST /api/decode</code> — the jukebox only dreams after settlement.</p>
+      </aside>
+
       <div class="player" id="player-wrap" hidden>
         <label for="player" class="field-label">Now dreaming from</label>
         <audio id="player" controls></audio>
@@ -121,7 +134,7 @@
 </main>
 
 <footer>
-  <p><svg class="icon" aria-hidden="true"><use href="#i-wave"/></svg> the crypto-fee gate is deliberately unbuilt — product first, payments last.</p>
+  <p><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> crypto-fee gate (x402, test-mode) ships dormant — wake it with <code>JUKEBOX_PAYMENTS</code>; product first, payments last.</p>
 </footer>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
