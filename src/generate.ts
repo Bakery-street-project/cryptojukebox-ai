@@ -1,6 +1,6 @@
 import type { Artifacts, SpikeState, TrackProfile } from "./types.ts";
 import { runDream, type DreamOptions } from "./dream/engine.ts";
-import { NOTE_NAMES } from "./dream/legacy.ts";
+import { NOTE_NAMES } from "./dream/formats.ts";
 
 export async function generate(profile: TrackProfile, spike: SpikeState, opts?: DreamOptions): Promise<Artifacts> {
   const local = runDream(profile, spike, opts);

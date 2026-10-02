@@ -9,6 +9,9 @@ import { fragmentWords } from "./render.ts";
  * generators — a fragment the dream did not visit cannot appear here.
  */
 
+/** Pitch-class names, shared with the LLM re-brief in generate.ts. */
+export const NOTE_NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
+
 function pickByCat(nodes: readonly WalkNode[], cat: Fragment["cat"]): Fragment | null {
   for (const n of nodes) if (n.frag.cat === cat) return n.frag;
   return null;
@@ -80,7 +83,7 @@ export function renderPrompt(nodes: readonly WalkNode[], profile: TrackProfile, 
   const objects = listOf(nodes, "object").slice(0, 3).map(fragmentWords);
   const senses = listOf(nodes, "sense").slice(0, 2).map(fragmentWords);
   const figures = listOf(nodes, "figure").slice(0, 1).map(fragmentWords);
-  const key = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"][profile.tonal.key % 12];
+  const key = NOTE_NAMES[profile.tonal.key % 12];
   const tone = profile.valence >= 0.5 ? "luminous, high-key" : "chthonic, low-key";
   return [
     `surreal ${tone} visualization`,
