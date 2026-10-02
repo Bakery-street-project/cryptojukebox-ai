@@ -2,7 +2,7 @@ import { analyze } from "./features.ts";
 import { classifyUrl, IngestError, ingestSpotify, ingestUpload, ingestYoutube } from "./ingest.ts";
 import { generate } from "./generate.ts";
 import { freshDreamSeed, isDreamSeed } from "./dream/seed.ts";
-import { getDream, listDreams, recordDream } from "./journal.ts";
+import { dreamPayloadLines, getDream, listDreams, recordDream } from "./journal.ts";
 import { runLif } from "./snn.ts";
 import { readPaymentsConfig } from "./payments/config.ts";
 import { buildPaymentGate } from "./payments/server.ts";
@@ -123,9 +123,21 @@ async function route(req: Request): Promise<Response> {
       headers: { "cache-control": "public, max-age=31536000, immutable" },
     });
   }
+  if (req.method === "GET" && url.pathname === "/api/dreams/export") {
+    const lines = dreamPayloadLines();
+    return new Response(lines.length ? lines.join("\n") + "\n" : "", {
+      headers: {
+        "content-type": "application/x-ndjson; charset=utf-8",
+        "content-disposition": `attachment; filename="dreams-${Math.floor(Date.now() / 1000)}.ndjson"`,
+      },
+    });
+  }
   if (req.method === "GET" && url.pathname === "/api/dreams") {
     const limit = Number(url.searchParams.get("limit") ?? 50);
-    return Response.json(listDreams(Number.isFinite(limit) ? limit : 50));
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    return Response.json(
+      listDreams(Number.isFinite(limit) ? limit : 50, Number.isFinite(offset) ? offset : 0),
+    );
   }
   const audioMatch = url.pathname.match(/^\/audio\/([a-z0-9-]+)$/i);
   if (audioMatch) {

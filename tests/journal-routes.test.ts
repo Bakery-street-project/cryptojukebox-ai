@@ -45,6 +45,56 @@ describe("journal routes", () => {
     expect(junk.status).toBe(200);
   });
 
+  test("GET /api/dreams offset paging yields disjoint ordered pages", async () => {
+    freshStore();
+    const db = (await import("../src/journal.ts")).journal();
+    for (const [seed, t] of [["aaaaaaaa", 1000], ["bbbbbbbb", 2000], ["cccccccc", 3000]] as const) {
+      db.run("INSERT INTO dreams (seed, title, artifacts, created_at) VALUES (?, '', '{}', ?)", [seed, t]);
+    }
+    const p1 = (await (await route(get("/api/dreams?limit=2&offset=0"))).json()) as { seed: string }[];
+    const p2 = (await (await route(get("/api/dreams?limit=2&offset=2"))).json()) as { seed: string }[];
+    expect(p1.map((d) => d.seed)).toEqual(["cccccccc", "bbbbbbbb"]);
+    expect(p2.map((d) => d.seed)).toEqual(["aaaaaaaa"]);
+    expect(p1.some((a) => p2.some((b) => a.seed === b.seed))).toBe(false);
+    // negative and junk offsets clamp to the first page instead of erroring
+    const clamped = (await (await route(get("/api/dreams?limit=2&offset=-5"))).json()) as { seed: string }[];
+    expect(clamped.map((d) => d.seed)).toEqual(["cccccccc", "bbbbbbbb"]);
+    const junk = (await (await route(get("/api/dreams?offset=nope"))).json()) as { seed: string }[];
+    expect(junk.length).toBe(3);
+  });
+
+  test("GET /api/dreams/export streams the whole journal as NDJSON", async () => {
+    freshStore();
+    const db = (await import("../src/journal.ts")).journal();
+    const row = (seed: string, title: string, dream: string, at: number) =>
+      db.run("INSERT INTO dreams (seed, title, artifacts, created_at) VALUES (?, ?, ?, ?)", [
+        seed,
+        title,
+        JSON.stringify({ title, artifacts: { dream } }),
+        at,
+      ]);
+    row("93577cae", "Deep Jungle Walk", "a low bridge at dawn", 1000);
+    row("12ab34cd", "Neon Rain", "rain that hums in F minor", 2000);
+    const res = await route(get("/api/dreams/export"));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/x-ndjson");
+    expect(res.headers.get("content-disposition")).toMatch(/^attachment; filename="dreams-\d+\.ndjson"$/);
+    const text = await res.text();
+    const lines = text.split("\n").filter(Boolean);
+    expect(lines.length).toBe(2);
+    const payloads = lines.map((l) => JSON.parse(l) as { title: string; artifacts: { dream: string } });
+    // newest first, whole DecodeResponse per line
+    expect(payloads.map((p) => p.title)).toEqual(["Neon Rain", "Deep Jungle Walk"]);
+    expect(payloads[0]!.artifacts.dream).toBe("rain that hums in F minor");
+  });
+
+  test("export of an empty journal is a valid empty NDJSON body", async () => {
+    freshStore();
+    const res = await route(get("/api/dreams/export"));
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("");
+  });
+
   test("decode records into the journal with its own dream seed", async () => {
     freshStore();
     const { recordDream: rec } = await import("../src/journal.ts");

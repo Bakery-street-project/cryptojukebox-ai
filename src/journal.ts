@@ -70,9 +70,23 @@ export function getDream(seed: string): StoredDream | null {
   return { seed: row.seed, title: row.title ?? "", created_at: row.created_at, payload };
 }
 
-export function listDreams(limit = 50): DreamSummary[] {
+export function listDreams(limit = 50, offset = 0): DreamSummary[] {
   const cap = Math.max(1, Math.min(500, Math.floor(limit) || 50));
+  const skip = Math.max(0, Math.floor(offset) || 0);
   return journal()
-    .query("SELECT seed, title, created_at FROM dreams ORDER BY created_at DESC, seed DESC LIMIT ?1")
-    .all(cap) as DreamSummary[];
+    .query("SELECT seed, title, created_at FROM dreams ORDER BY created_at DESC, seed DESC LIMIT ?1 OFFSET ?2")
+    .all(cap, skip) as DreamSummary[];
+}
+
+/**
+ * Whole stored payloads, newest-first, as NDJSON-ready lines (each is the
+ * JSON.stringify output written by recordDream — no embedded raw newlines).
+ * Backup path by design: the full journal, unpaged — the export is meant to
+ * restore everything, not a window of it.
+ */
+export function dreamPayloadLines(): string[] {
+  const rows = journal()
+    .query("SELECT artifacts FROM dreams ORDER BY created_at DESC, seed DESC")
+    .all() as { artifacts: string }[];
+  return rows.map((r) => r.artifacts);
 }
