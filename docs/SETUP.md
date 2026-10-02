@@ -44,6 +44,12 @@ cp .env.example .env   # .env is gitignored, never commit secrets
 - `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` — Spotify ingest via the
   official 30-second preview endpoint (DRM limitation is reported honestly
   when unset).
+- `JUKEBOX_PAYMENTS` (`off`|`mock`|`x402-testnet`, default `off`) +
+  `JUKEBOX_PAY_TO` / `JUKEBOX_PAY_NETWORK` / `JUKEBOX_PAY_PRICE_USDC` /
+  `JUKEBOX_X402_FACILITATOR_URL` — the x402 crypto-fee gate. `JUKEBOX_PAY_TO`
+  is a **public receive address only**: the server is watch/settle-only and
+  must never hold a private key or seed phrase. `x402-testnet` requires the
+  facilitator URL; `mock` settles fake payments locally for E2E tests.
 
 ## 4. Run
 
@@ -83,6 +89,20 @@ Manual smoke test: open the UI, upload any mp3/wav/ogg, confirm BPM/key/
 valence/arousal metrics, waveform canvas, four artifact cards and the neural
 sigil render.
 
+Payment gate smoke test (offline, no chain):
+
+```bash
+JUKEBOX_PAYMENTS=mock JUKEBOX_PAY_TO=0x1111111111111111111111111111111111111111 bun dev
+# unpaid → 402 with x402 requirements:
+curl -s -F "file=@some.wav" http://localhost:8787/api/decode
+# paid (mock X-PAYMENT header = base64 x402 payload; see tests/payments.test.ts) → 200 artifacts
+```
+
+Testnet leg (real x402 protocol, faucet money only — see the header comments
+in `scripts/pay-demo.ts` for the full sequence: funded throwaway test wallet,
+`JUKEBOX_PAYMENTS=x402-testnet`, public facilitator, `bun scripts/pay-demo.ts
+<track-url>`).
+
 ## 6. CI & automation
 
 - `.github/workflows/ci.yml` — typecheck + tests on every push/PR.
@@ -101,8 +121,14 @@ sigil render.
 | Spotify link returns "DRM" error | expected without API creds — see step 3 |
 | Port already in use | `PORT=8788 bun dev` |
 | LLM artifacts look identical every run | `OPENAI_API_KEY`/`JUKEBOX_LLM_MODEL` unset → local deterministic engine (by design; the engine badge on the sigil card shows which is active) |
+| `POST /api/decode` returns 402 | payment gate is on (`JUKEBOX_PAYMENTS=mock|x402-testnet`) — set it to `off` for free decoding, or pay with an `X-PAYMENT` header |
 
 ## 8. Out of scope (deliberate)
 
-- Crypto-fee payment gate: build-last per project guardrails; no payment
-  code exists yet and none should be expected in this repo.
+- Mainnet payments and real money: the gate runs in test mode (`off`/`mock`/
+  `x402-testnet`) until a dedicated hardening pass precedes any real
+  transaction.
+- Browser-wallet pay button (MetaMask `eth_signTypedData_v4`): the paid loop
+  is proven via the x402 client script, not an in-browser wallet yet.
+- Multi-chain "pay from any chain": x402 is protocol-native for other chains
+  (e.g. Solana SVM scheme) but only Base USDC is built.

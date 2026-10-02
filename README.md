@@ -51,6 +51,13 @@ bun run typecheck  # strict TypeScript check
   returns track profile, neural state and all artifacts.
 - `GET /audio/:id` — streams previously decoded cached audio.
 
+When the payment gate is enabled (`JUKEBOX_PAYMENTS=mock|x402-testnet`) an
+unpaid `POST /api/decode` returns **HTTP 402** with x402 payment requirements;
+retry the identical request with an `X-PAYMENT` header and the pipeline only
+runs after the payment verifies and settles (funds land in `JUKEBOX_PAY_TO`;
+the server holds no keys). With the default `JUKEBOX_PAYMENTS=off` there is no
+payment step at all.
+
 Everything degrades gracefully with no env set; optional keys
 (`OPENAI_API_KEY`, `SPOTIFY_CLIENT_ID`/`SECRET`) unlock LLM generation and
 Spotify-preview ingest — see `.env.example`.
@@ -59,7 +66,9 @@ Spotify-preview ingest — see `.env.example`.
 
 ```
 src/        dsp.ts features.ts snn.ts generate.ts ingest.ts server.ts
+src/payments/  x402 fee gate (config / mock / server)
 public/     index.html style.css app.js   (glassmorphic neon UI)
+scripts/    pay-demo.ts — x402 testnet client that pays for one decode
 tests/      bun test suites
 docs/       SETUP.md operations manual
 .github/    CI, dependabot, audit workflows
@@ -67,8 +76,14 @@ docs/       SETUP.md operations manual
 
 ## Status & scope
 
-- The crypto-fee payment gate is deliberately not built yet — product first,
-  payments last.
+- Crypto-fee gate: built as [x402](https://docs.x402.org/) (HTTP-402 open
+  standard, USDC via EIP-3009 on Base/Base-Sepolia), **test-mode by default** —
+  `off` (no payment), `mock` (fake facilitator, offline E2E), `x402-testnet`
+  (real protocol, faucet test-USDC, no real money). Mainnet, self-hosted
+  facilitator and browser-wallet pay-button are deliberately next steps, not
+  done.
+- "Any blockchain" is currently Base-USDC-only; Solana (x402 SVM scheme) is
+  protocol-native but unbuilt.
 - Spotify links honestly report the DRM/preview limitation until API
   credentials are provided.
 
