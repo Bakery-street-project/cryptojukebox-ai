@@ -44,6 +44,8 @@ export interface DreamMeta {
   nodeCount: number;
   burstCount: number;
   residueCount: number;
+  /** M8 — the hypnagogic strip: per-neuron firing rate as luminance. */
+  phosphene: string;
 }
 
 export interface Artifacts {
