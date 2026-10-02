@@ -104,7 +104,8 @@ src/payments/  x402 fee gate (config / mock / server)
 public/     index.html style.css app.js   (glassmorphic neon UI)
 scripts/    pay-demo.ts — x402 testnet client that pays for one decode
 tests/      bun test suites
-docs/       SETUP.md operations manual
+docs/       SETUP.md manual, CLOUDFLARE.md edge-integration plan,
+            DREAM-LISTENING.md quality-gate notes
 .github/    CI, dependabot, audit workflows
 ```
 
