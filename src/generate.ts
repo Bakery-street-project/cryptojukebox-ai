@@ -3,10 +3,9 @@ import { runDreamWithState, type DreamOptions } from "./dream/engine.ts";
 import type { DreamState } from "./dream/types.ts";
 
 /** The scene as the mechanism walked it — what the LLM is allowed to re-tell. */
-function dreamBrief(profile: TrackProfile, state: DreamState): string {
+function dreamBrief(state: DreamState): string {
   const peak = state.arc.reduce((best, p) => (p.tension > best.tension ? p : best), state.arc[0] ?? { node: 0, tension: 0 });
   return JSON.stringify({
-    title: profile.title,
     firstDraft: state.text,
     walkedScene: state.nodes.map((n) => ({
       fragment: n.frag.words[0] ?? n.frag.id.replace(/_/g, " "),
@@ -42,7 +41,7 @@ export async function generate(profile: TrackProfile, spike: SpikeState, opts?: 
             content:
               "You are the waking re-teller of a neuromorphic jukebox. A dream mechanism (phasic bursts, affect-weighted replay, an associative walk under reduced executive function) has already walked a scene and narrated it roughly. Your job is only to re-tell that dream in better prose. Rules: use nothing but the walked fragments, the associations recorded in arrivedBy, and the day-residue words — inventing a new fragment betrays the dream. Keep the odd that the fades mark as hazy or gone; do not tidy it. Never mention analysis numbers or the mechanism. dream: 3-6 sentences, second person. idea: one buildable creative concept from the same fragments. script: a 5-line film scene. prompt: an image-generation prompt. Emit JSON with keys dream, idea, script, prompt.",
           },
-          { role: "user", content: dreamBrief(profile, state) },
+          { role: "user", content: dreamBrief(state) },
         ],
       }),
     });

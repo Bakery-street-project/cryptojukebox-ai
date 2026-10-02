@@ -115,11 +115,12 @@ describe("LLM re-teller (mocked fetch, no key, no network)", () => {
     expect(system).toContain("re-tell");
 
     const brief = JSON.parse(messages.find((m) => m.role === "user")!.content) as {
-      title: string;
+      title?: unknown;
       firstDraft: string;
       walkedScene: { fragment: string }[];
     };
-    expect(brief.title).toBe("test track");
+    // the re-teller never sees the track's name — the dream is the signal's own
+    expect(brief.title).toBeUndefined();
     expect(brief.walkedScene.length).toBeGreaterThan(0);
     const bankPhrases = new Set(DEFAULT_BANK.fragments.map((f) => f.words[0] ?? f.id));
     for (const step of brief.walkedScene) {

@@ -58,7 +58,7 @@ export function dreamState(profile: TrackProfile, spike: SpikeState, seedBits: n
   const nodes = assocWalk(bank, profile, spike, seeds, exec, stream(seedBits, "walk"));
   const arc = tensionArc(nodes, profile, spike);
   const residueRng = stream(seedBits, "residue");
-  const residues = dayResidue(profile.title, residueRng);
+  const residues = dayResidue(profile, residueRng);
   const morphed = residues.map((r) => morphResidue(r, residueRng));
   const renderRng = stream(seedBits, "render");
   const fades = recallDecay(nodes, exec, renderRng);

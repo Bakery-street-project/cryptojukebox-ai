@@ -24,8 +24,10 @@ music:
   accepted without comment.
 - **Hyperpriming (M4)** — the walk follows weak, remote associations a waking
   engine would reject, with capped hard cuts.
-- **Threat-simulation arc (M5)**, **day residue (M6)** — the track title leaks
-  in, distorted, at most twice.
+- **Threat-simulation arc (M5)**, **day residue (M6)** — the dream never reads
+  the track's name; what leaks in are half-word sounds folded out of the
+  loudest transients of the decoded signal (zero-crossing → onset, centroid →
+  vowel), distorted, at most twice.
 - **Reconstructive recall (M7)** — scenes fade (clear/hazy/gone) before being
   spoken; the idea/script/prompt are the *same dream* re-recalled in other
   formats, never new inventions.

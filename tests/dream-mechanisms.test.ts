@@ -152,27 +152,58 @@ describe("replay sampling (M2)", () => {
 });
 
 describe("day residue (M6)", () => {
-  test("at most two tokens, always ASCII-safe", () => {
-    const rng = mulberry32(9);
-    for (const title of ["Neon Cathedral (Live ✦ 2024)", "😍😍😍", "GHOST\tTRACK\r\nREMIX", "普通の話"]) {
-      const res = dayResidue(title, rng);
+  test("residue reads the signal, not the name", () => {
+    const loud = profile({
+      frames: framesOf([3, 2.5, 2, ...Array.from({ length: 40 }, () => 0.05)]).map((f, i) => ({
+        ...f,
+        zcr: 0.02 + (i % 3) * 0.08,
+        centroid: 300 + i * 120,
+        rms: 0.05 + (i % 4) * 0.1,
+      })),
+    });
+    const quiet = profile({
+      frames: framesOf([0.4, 0.35, 0.3, ...Array.from({ length: 40 }, () => 0.01)]).map((f, i) => ({
+        ...f,
+        zcr: 0.24 - (i % 3) * 0.07,
+        centroid: 4800 - i * 150,
+        rms: 0.02,
+      })),
+    });
+    const fromLoud = dayResidue(loud, mulberry32(9));
+    const fromQuiet = dayResidue(quiet, mulberry32(9));
+    expect(fromLoud).not.toEqual(fromQuiet);
+    // the title is not an input: renaming cannot change the residue
+    expect(dayResidue({ ...loud, title: "totally different ✦ name" }, mulberry32(9))).toEqual(fromLoud);
+    expect(fromLoud.length).toBeGreaterThan(0);
+  });
+
+  test("at most two tokens, always lowercase ASCII syllables", () => {
+    for (const seed of [1, 2, 3, 7, 11, 42]) {
+      const p = profile({
+        frames: framesOf(Array.from({ length: 60 }, (_, i) => (i % 7 === 0 ? 1 : 0.05))),
+      });
+      const res = dayResidue(p, mulberry32(seed));
       expect(res.length).toBeLessThanOrEqual(2);
-      for (const w of res) expect(w).toMatch(/^[a-z][a-z0-9]*$/);
+      for (const w of res) expect(w).toMatch(/^[a-z]{2,8}$/);
     }
   });
 
-  test("stopwords and unusable words are dropped", () => {
-    expect(dayResidue("The Live Official Video", mulberry32(1))).toEqual([]);
-    expect(dayResidue("", mulberry32(1))).toEqual([]);
+  test("no signal, no residue", () => {
+    expect(dayResidue(profile({ frames: [] }), mulberry32(1))).toEqual([]);
+  });
+
+  test("same decode + same draw, same residue", () => {
+    const p = profile({});
+    expect(dayResidue(p, mulberry32(5))).toEqual(dayResidue(p, mulberry32(5)));
   });
 
   test("morphing is deterministic per draw and stays printable", () => {
     const rng = mulberry32(2);
     for (let i = 0; i < 50; i++) {
-      const m = morphResidue("cathedral", rng);
+      const m = morphResidue("shooth", rng);
       expect(m).toMatch(/^[a-z0-9-]+$/);
     }
-    expect(morphResidue("cathedral", mulberry32(7))).toBe(morphResidue("cathedral", mulberry32(7)));
+    expect(morphResidue("shooth", mulberry32(7))).toBe(morphResidue("shooth", mulberry32(7)));
   });
 });
 

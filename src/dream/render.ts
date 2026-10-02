@@ -107,7 +107,7 @@ export function renderDream(
     const nodeSlot = sentences.length - 1;
 
     if (i < morphed.length && morphed[i] !== undefined) {
-      sentences.push(`${cap(morphed[i]!)} — the word somebody used at the window this morning.`);
+      sentences.push(`${cap(morphed[i]!)} — a sound the track left in the room, like a word.`);
     }
     if (rng() < exec.acceptanceP) {
       sentences[nodeSlot] = `${sentences[nodeSlot]!.replace(/\.$/, "")}${ACCEPTANCES[Math.floor(rng() * ACCEPTANCES.length) % ACCEPTANCES.length]}.`;
