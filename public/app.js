@@ -438,9 +438,7 @@ function setJournalState(dreams) {
   $("export-link").hidden = empty || journalFailed;
   $("journal-status").textContent = journalFailed
     ? "couldn't read the journal — the decoder still works."
-    : empty
-      ? "no dreams yet — decode something."
-      : "every dream this machine has had, kept by its seed";
+    : "every dream this machine has had, kept by its seed";
 }
 
 async function loadJournal() {
