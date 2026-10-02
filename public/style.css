@@ -242,3 +242,17 @@ footer .icon { color: var(--color-secondary); }
 .seed-chip code { font-family: ui-monospace, "SFMono-Regular", monospace; letter-spacing: .06em; color: var(--color-text); }
 .chip-copy { min-height: 0; padding: 3px 5px; background: transparent; border-color: transparent; }
 .chip-copy:hover { border-color: transparent; }
+
+/* ---------- hypnagogic phosphene strip (M8) ---------- */
+.phosphene { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.phosphene-label {
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--color-faint);
+}
+.phosphene-line {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", monospace;
+  white-space: pre; overflow-wrap: normal; overflow-x: auto;
+  font-size: 17px; line-height: 1.2; letter-spacing: .18em;
+  color: var(--color-accent);
+  text-shadow: 0 0 10px rgba(236,72,153,.5), 0 0 28px rgba(34,211,238,.25);
+}

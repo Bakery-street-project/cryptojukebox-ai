@@ -209,6 +209,9 @@ function render(data) {
     ? "Language-model re-telling of the scene the mechanism walked — the seed and the numbers stay the machine's own. Recall this dream by its seed."
     : "Mechanism-inspired dream engine — phasic bursts, affect-weighted replay and an associative walk under reduced executive function. One song, one dream per listen; paste the seed back to recall it exactly.";
   $("sigil-sub").textContent = `${data.spike.rates.length} neurons · mean firing ${(data.spike.meanRate * 100).toFixed(1)}%`;
+  const phosphene = data.artifacts.dreamMeta.phosphene;
+  $("a-phosphene").textContent = phosphene;
+  $("phosphene-wrap").hidden = !phosphene;
 
   drawWave(p.frames);
   drawSigil(data.artifacts.sigil);
