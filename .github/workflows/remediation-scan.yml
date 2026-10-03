@@ -97,7 +97,7 @@ jobs:
 
       - name: Upload audit results
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependabot-audit-results
           path: ${{ env.AUDIT_OUTPUT_DIR }}/
