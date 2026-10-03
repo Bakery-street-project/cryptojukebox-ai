@@ -18,7 +18,7 @@ artifact-discipline, not server pushes — until the edge goes live.
 
 ## Release checklist
 
-1. `bun run typecheck && bun test` green locally (86 tests).
+1. `bun run typecheck && bun test` green locally (89 tests).
 2. `CHANGELOG.md`: move Unreleased → version section, date it.
 3. `package.json` version bump + annotated tag, one commit.
 4. Push `main` + tags; watch the CI run — both `quality` and `codeql`

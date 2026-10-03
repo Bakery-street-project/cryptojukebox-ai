@@ -20,7 +20,7 @@ system design in `docs/ARCHITECTURE.md`.
 |---|---|---|
 | 1 | `bun install --frozen-lockfile` | root |
 | 2 | `bunx tsc --noEmit` | root — strict; `include: ["src","tests"]` |
-| 3 | `bun test` | 86 tests / 11 files, ~1 s |
+| 3 | `bun test` | 89 tests / 11 files, ~1 s |
 | 4 | `cd cloudflare && bun install --frozen-lockfile && bunx tsc --noEmit` | Worker |
 | 5 | `codeql` job (parallel) | SARIF → code scanning |
 
