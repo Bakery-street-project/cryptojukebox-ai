@@ -17,7 +17,7 @@ residues are phonemes folded from the loudest transients — zero-crossing
 rate → onset hardness, spectral centroid → vowel color — distorted and
 capped at two (`src/dream/residue.ts`, tests "residue reads the signal,
 not the name" in `tests/dream-mechanisms.test.ts`). The title reaches
-only the profile `signature` hash (`src/features.ts:168-170`) used for
+only the profile `signature` hash (`src/features.ts:178-180`) used for
 fallback seeding, never the fragment selection or rendering. Copy
 language is fixed: **"mechanism-inspired synthesis"**, never any claim
 that the engine understands music (README §"The dream engine").
@@ -40,7 +40,7 @@ that the engine understands music (README §"The dream engine").
 - Renaming a track cannot rewrite an existing dream: over HTTP the seed
   always comes from entropy or the client, and fragment selection never
   consults the title. (The library-only fallback seed does hash the
-  title — `features.ts:168-170` — which is exactly why the server path
+  title — `features.ts:178-180` — which is exactly why the server path
   supplies a real seed instead.)
 - The honesty wording ("mechanism-inspired synthesis") is now a standing
   constraint repeated in `AGENTS.md` and all handoff prompts.

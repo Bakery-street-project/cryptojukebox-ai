@@ -86,9 +86,9 @@ export function analyze(samples: Float32Array, sampleRate: number, title: string
   return profile;
 }
 
-function estimateBpm(onset: number[], frameRate: number): number {
+function estimateBpm(onset: number[], frameRate: number): { bpm: number; bpmConfidence: number } {
   const n = onset.length;
-  if (n < 8) return 0;
+  if (n < 8) return { bpm: 0, bpmConfidence: 0 };
   const mean = onset.reduce((s, x) => s + x, 0) / n;
   const centered = onset.map((x) => x - mean);
   const minLag = Math.max(2, Math.floor((frameRate * 60) / 200));
@@ -109,7 +109,7 @@ function estimateBpm(onset: number[], frameRate: number): number {
       bestLag = lag;
     }
   }
-  if (bestLag === 0) return 0;
+  if (bestLag === 0) return { bpm: 0, bpmConfidence: 0 };
   while (Math.round(bestLag / 2) >= minLag && corr(Math.round(bestLag / 2)) >= bestVal * 0.45) {
     bestLag = Math.round(bestLag / 2);
   }
@@ -120,7 +120,17 @@ function estimateBpm(onset: number[], frameRate: number): number {
   const denom = prev - 2 * (values[idx] ?? 0) + next;
   const shift = denom === 0 ? 0 : (0.5 * (prev - next)) / denom;
   const lag = bestLag + shift;
-  return lag <= 0 ? 0 : (60 * frameRate) / lag;
+  // Confidence = how much of the onset signal's own energy the chosen
+  // periodicity explains — peak prominence against the zero-lag energy
+  // (energy), with the curve mean removed: clicks approach 1, aperiodic
+  // flux stays near 0. Normalising against the curve's own max instead
+  // would always score the argmax 1.0, even on noise.
+  const curveMean = values.reduce((s, x) => s + x, 0) / values.length;
+  const energy = centered.reduce((s, x) => s + x * x, 0);
+  const span = energy - curveMean;
+  const bpmConfidence = span <= 0 ? 0 : Math.max(0, Math.min(1, ((values[idx] ?? 0) - curveMean) / span));
+  const bpm = lag <= 0 ? 0 : (60 * frameRate) / lag;
+  return { bpm, bpmConfidence };
 }
 
 function summarize(frames: Frame[], chromaSum: Float64Array, sampleRate: number, title: string): TrackProfile {
@@ -157,7 +167,7 @@ function summarize(frames: Frame[], chromaSum: Float64Array, sampleRate: number,
 
   const onset = frames.map((f) => f.flux);
   const frameRate = sampleRate / HOP;
-  const bpm = estimateBpm(onset, frameRate);
+  const { bpm, bpmConfidence } = estimateBpm(onset, frameRate);
 
   const brightnessNorm = Math.min(1, brightness / 5500);
   const loudnessNorm = Math.min(1, loudness / 0.25);
@@ -175,6 +185,7 @@ function summarize(frames: Frame[], chromaSum: Float64Array, sampleRate: number,
     sampleRate,
     frames,
     bpm,
+    bpmConfidence,
     loudness,
     brightness,
     dynamism,

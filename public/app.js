@@ -229,7 +229,11 @@ function render(data) {
 function doRender(data) {
   const p = data.profile;
   const tonal = p.tonal;
-  countUp($("m-bpm"), Number.isFinite(p.bpm) ? Math.round(p.bpm) : 0, "");
+  // "~" marks a low-confidence tempo measurement only; absent confidence
+  // (journal entries from before the field existed) stays unmarked.
+  const bpmLow = Number.isFinite(p.bpmConfidence) && p.bpmConfidence < 0.5;
+  countUp($("m-bpm"), Number.isFinite(p.bpm) ? Math.round(p.bpm) : 0, "", bpmLow ? "~" : "");
+  $("m-bpm").title = bpmLow ? "tempo pulse is a weak read of this track" : "";
   $("m-key").textContent = tonal && Number.isFinite(tonal.key)
     ? `${NOTE_NAMES[tonal.key % 12]} ${str(tonal.mode)}`
     : "—";
@@ -281,16 +285,16 @@ function doRender(data) {
   results.scrollIntoView({ behavior: REDUCED_MOTION ? "auto" : "smooth", block: "start" });
 }
 
-function countUp(el, target, mode) {
+function countUp(el, target, mode, prefix = "") {
   if (REDUCED_MOTION || mode === "decimal") {
-    el.textContent = mode === "decimal" ? target.toFixed(2) : `${target}${mode}`;
+    el.textContent = mode === "decimal" ? target.toFixed(2) : `${prefix}${target}${mode}`;
     return;
   }
   const start = performance.now();
   const step = (now) => {
     const t = Math.min(1, (now - start) / 650);
     const eased = 1 - (1 - t) ** 3;
-    el.textContent = `${Math.round(target * eased)}${mode}`;
+    el.textContent = `${prefix}${Math.round(target * eased)}${mode}`;
     if (t < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);

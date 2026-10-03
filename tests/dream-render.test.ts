@@ -23,6 +23,7 @@ function profile(over: Partial<TrackProfile>): TrackProfile {
       zcr: 0.05 + (i % 3) * 0.02,
     })),
     bpm: 120,
+    bpmConfidence: 0.9,
     loudness: 0.1,
     brightness: 1500,
     dynamism: 0.6,

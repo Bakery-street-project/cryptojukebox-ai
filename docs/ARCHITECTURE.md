@@ -40,8 +40,8 @@ flowchart LR
 | `src/server.ts` | HTTP routing, payment gate seam, journal write, frame downsampling to ≤1500 for responses | `:97-152`, `:86-95` |
 | `src/ingest.ts` | three source kinds → `{id,title,samples,sampleRate}`; ffmpeg `-f f32le -ac 1 -ar 22050` | `:30`, `TARGET_RATE :7`, `<0.5 s` rejected `:36` |
 | `src/dsp.ts` | FFT + Hann window, hashing primitives | used by features.ts |
-| `src/features.ts` | per-frame features + track profile: BPM (`estimateBpm :89-124`), key/mode by major/minor template correlation (`:148-156`), valence/arousal (`:165-166`), `signature` fnv1a hash (`:168-170`) | frame 2048/hop 512 `:4-5` |
-| `src/snn.ts` | leaky-integrate-and-fire net, `NEURONS = 24` (`:4`); constants hardcoded `:5-9`; audio enters as 4 channels `:35-40`; PRNG-seeded weights `:12,:18` | `SpikeState = {rates, meanRate, sync, raster≤4000}` types.ts:30-35 |
+| `src/features.ts` | per-frame features + track profile: BPM + `bpmConfidence` — chosen autocorrelation peak over onset energy (`estimateBpm :89-134`, confidence `:128-131`), key/mode by major/minor template correlation (`:156-166`), valence/arousal (`:175-176`), `signature` fnv1a hash (`:178-180`) | frame 2048/hop 512 `:4-5` |
+| `src/snn.ts` | leaky-integrate-and-fire net, `NEURONS = 24` (`:4`); constants hardcoded `:5-9`; audio enters as 4 channels `:35-40`; PRNG-seeded weights `:12,:18` | `SpikeState = {rates, meanRate, sync, raster≤4000}` types.ts:32-37 |
 | `src/dream/` | the mechanism engine (see §3) | — |
 | `src/generate.ts` | orchestrates `runDream`, optional LLM re-teller (see §5) | gate `:26-28` |
 | `src/journal.ts` | `bun:sqlite` dream store, WAL, `INSERT OR IGNORE` (first seed wins) | tested `tests/journal.test.ts` |
@@ -116,7 +116,7 @@ recorded in HANDOFF-T1, not yet implemented.
    or explicit seed (`snn.ts:12`), engine per-stage rng streams
    (`engine.ts:24-26`).
 3. Audio, never metadata: title only feeds the profile `signature` hash
-   (`features.ts:168-170`); residue reads only the decoded signal (M6).
+   (`features.ts:178-180`); residue reads only the decoded signal (M6).
 
 ## 8. Payments architecture (current and intended)
 

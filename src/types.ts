@@ -18,6 +18,8 @@ export interface TrackProfile {
   sampleRate: number;
   frames: Frame[];
   bpm: number;
+  /** 0–1 prominence of the chosen autocorrelation peak over the searched lag range (features.ts). */
+  bpmConfidence: number;
   loudness: number;
   brightness: number;
   dynamism: number;

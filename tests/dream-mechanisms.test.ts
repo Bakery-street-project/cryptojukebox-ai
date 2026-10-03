@@ -23,6 +23,7 @@ function profile(over: Partial<TrackProfile>): TrackProfile {
     sampleRate: 22050,
     frames: framesOf(Array.from({ length: 120 }, (_, i) => (i % 12 === 0 ? 1 : 0.05))),
     bpm: 120,
+    bpmConfidence: 0.9,
     loudness: 0.1,
     brightness: 1500,
     dynamism: 0.4,

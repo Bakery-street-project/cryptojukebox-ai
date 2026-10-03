@@ -10,6 +10,7 @@ function state(over: Partial<TrackProfile>): TrackProfile {
     sampleRate: 22050,
     frames: [],
     bpm: 120,
+    bpmConfidence: 0.9,
     loudness: 0.1,
     brightness: 1500,
     dynamism: 0.4,

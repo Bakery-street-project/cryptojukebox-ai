@@ -21,6 +21,14 @@ versions: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   debounced resize redraw, programmatic focus on first results show.
 - `scripts/ui-validate.ts` — 23-check Playwright runtime validation,
   re-runnable release evidence (`55e906e`).
+- `scripts/ui-validate.ts` preflight: every configured URL must answer
+  `/api/dreams?limit=1` with a JSON array or the run aborts naming the
+  hijacked port — a real run once validated an unrelated app that had
+  taken over `UI_URL`.
+- `profile.bpmConfidence` (0–1): share of onset energy explained by the
+  chosen autocorrelation peak (`features.ts` `estimateBpm`); the BPM
+  metric shows a `~` prefix when it reads below 0.5. Journal entries
+  predating the field render unmarked.
 
 ### Fixed
 - Cold-load panel leak: `.tabpanel`/`.results` display rules overrode the

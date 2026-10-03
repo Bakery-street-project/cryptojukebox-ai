@@ -22,6 +22,18 @@ function clickTrack(bpm: number, seconds: number): Float32Array {
   return out;
 }
 
+// deterministic white noise (LCG) — aperiodic onset flux, no beat to find
+function noise(seconds: number, seed = 1): Float32Array {
+  const n = Math.floor(SR * seconds);
+  const out = new Float32Array(n);
+  let s = seed;
+  for (let i = 0; i < n; i++) {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    out[i] = (s / 0x100000000) * 2 - 1;
+  }
+  return out;
+}
+
 describe("analyze", () => {
   test("detects spectral centroid near a pure tone", () => {
     const samples = new Float32Array(Math.floor(SR * 2));
@@ -51,5 +63,27 @@ describe("analyze", () => {
     const c = analyze(sine(300, 2), SR, "two");
     expect(a.signature).toBe(b.signature);
     expect(a.signature).not.toBe(c.signature);
+  });
+
+  test("bpmConfidence is a finite fraction for measured signals", () => {
+    for (const samples of [clickTrack(120, 8), sine(440, 4), noise(8)]) {
+      const c = analyze(samples, SR, "x").bpmConfidence;
+      expect(Number.isFinite(c)).toBe(true);
+      expect(c).toBeGreaterThanOrEqual(0);
+      expect(c).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("a periodic click track out-confidences aperiodic noise", () => {
+    const clicks = analyze(clickTrack(120, 8), SR, "clicks").bpmConfidence;
+    const hiss = analyze(noise(8), SR, "hiss").bpmConfidence;
+    expect(clicks).toBeGreaterThan(hiss);
+    expect(clicks).toBeGreaterThan(0.5);
+    expect(hiss).toBeLessThan(0.5);
+  });
+
+  test("bpmConfidence is deterministic for identical samples", () => {
+    const samples = clickTrack(100, 6);
+    expect(analyze(samples, SR, "x").bpmConfidence).toBe(analyze(samples, SR, "x").bpmConfidence);
   });
 });

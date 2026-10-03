@@ -22,7 +22,7 @@ of crypto entropy and emits its own seed (unrepeatable by default).
 Supply a previous `artifacts.dreamMeta.dreamSeed`: byte-identical recall
 for the same audio (`ADR-001`).
 
-**200 → `DecodeResponse`** (`src/types.ts:61-68`):
+**200 → `DecodeResponse`** (`src/types.ts:63-70`):
 
 ```jsonc
 {
@@ -32,7 +32,11 @@ for the same audio (`ADR-001`).
   "profile": {
     "durationSec": 0, "sampleRate": 22050,
     "frames": [ { "t": 0, "rms": 0, "centroid": 0, "flux": 0, "zcr": 0 } ],  // downsampled ≤1500, t 2dp (server.ts:86-95)
-    "bpm": 0, "loudness": 0, "brightness": 0, "dynamism": 0,
+    "bpm": 0, "bpmConfidence": 0, "loudness": 0, "brightness": 0, "dynamism": 0,
+    // bpmConfidence ∈ [0,1]: fraction of the onset signal's energy explained by
+    // the chosen autocorrelation peak — 1 perfectly periodic clicks, 0 aperiodic
+    // flux (features.ts:128-131). Missing in journal entries decoded before the
+    // field existed; the UI treats absent as unknown.
     "tonal": { "key": 0, "mode": "major|minor", "majorness": 0 },
     "valence": 0, "arousal": 0, "signature": "hex fnv1a"
   },

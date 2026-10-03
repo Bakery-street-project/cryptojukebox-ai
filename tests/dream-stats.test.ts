@@ -30,6 +30,7 @@ function profile(over: Partial<TrackProfile>): TrackProfile {
     sampleRate: 22050,
     frames: frames(120, () => 0.05),
     bpm: 120,
+    bpmConfidence: 0.9,
     loudness: 0.1,
     brightness: 1500,
     dynamism: 0.2,
