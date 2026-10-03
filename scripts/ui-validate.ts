@@ -8,6 +8,8 @@
  *   BEFORE_URL=http://localhost:8790 UI_URL=http://localhost:8791 \
  *   EMPTY_URL=http://localhost:8792 TRACK=/tmp/testtrack.wav \
  *   bun scripts/ui-validate.ts
+ * Before any browser check, each configured URL is probed via /api/dreams
+ * to confirm it really is a jukebox origin (not a hijacked port).
  * Exits non-zero on any failed check; screenshots land in /tmp.
  */
 import { chromium } from "playwright";
@@ -24,6 +26,40 @@ function check(name: string, ok: boolean, detail = "") {
   results.push({ name, ok, detail });
   if (!ok) failures++;
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? " — " + detail : ""}`);
+}
+
+/* ---- preflight: the target port must actually serve the jukebox ----
+ * A real run once validated against an unrelated local app that had
+ * silently taken over UI_URL's port between runs, producing confusing
+ * locator failures instead of "wrong origin". /api/dreams?limit=1 must
+ * answer 200 + JSON + array (an empty journal still answers []) —
+ * anything else aborts before a browser is launched. */
+async function probeJukeboxOrigin(base: string): Promise<string | null> {
+  let res: Response;
+  try {
+    res = await fetch(`${base.replace(/\/+$/, "")}/api/dreams?limit=1`);
+  } catch (e) {
+    return `request failed: ${e instanceof Error ? e.message : String(e)}`;
+  }
+  if (res.status !== 200) return `HTTP ${res.status}`;
+  const ctype = res.headers.get("content-type") ?? "";
+  if (!ctype.includes("application/json")) return `content-type ${ctype || "(missing)"}`;
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    return "body is not valid JSON";
+  }
+  if (!Array.isArray(body)) return "body is not a JSON array";
+  return null;
+}
+for (const base of [UI, BEFORE, EMPTY]) {
+  if (!base) continue;
+  const reason = await probeJukeboxOrigin(base);
+  if (reason) {
+    console.error(`FATAL: ${base} is not a cryptojukebox origin (/api/dreams probe failed: ${reason}) — wrong port or port hijacked by another app`);
+    process.exit(1);
+  }
 }
 
 const browser = await chromium.launch();
